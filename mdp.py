@@ -10,7 +10,6 @@ import pydot
 import io
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-import time
 
 class MDP():
     def __init__(self):
@@ -91,6 +90,7 @@ class MDP():
 
     def simulate(self, max_steps = 100):
         auto = input("Simulation automatique ? Y/N \n")
+        animate = input("Affichage graphique? Y/N \n")
         print("\nStarting Simulation\n--------------------")
         print("Max transitions : " + str(max_steps)+ "\n--------------------")
         print("Starting states : " + str(self.states[0]))
@@ -100,7 +100,8 @@ class MDP():
         for step in range(max_steps):
 
             index = self.states.index(state)
-            self.print(state)
+            if animate == 'Y':
+                self.print(state)
 
             targets = []
             weights = []
@@ -255,6 +256,7 @@ def main():
     print(np.sum(mdp.transition[None], axis = 1))
     print(mdp.possible_actions)
     mdp.simulate()
+    input("Press Enter to end program")
 
 
 if __name__ == '__main__':
