@@ -10,6 +10,7 @@ import pydot
 import io
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import time
 
 class MDP():
     def __init__(self):
@@ -49,9 +50,11 @@ class MDP():
                     self.transition[None][index][index] = 1
 
 
-    def print(self):
+    def print(self, c_state):
         graph = pydot.Dot('Markov Chain Representation', graph_type='graph', bgcolor='white')
         states_graph = [pydot.Node(state, label = state) for state in self.states]
+        states_graph[self.states.index(c_state)].set_style('filled')
+        states_graph[self.states.index(c_state)].set_fillcolor('blue')
         for state in states_graph: graph.add_node(state)
         for source in self.states:
             index = self.states.index(source)
@@ -80,6 +83,8 @@ class MDP():
 
         # plot the image
         imgplot = plt.imshow(img, aspect='equal')
+        plt.pause(0.01)
+        plt.ion()
         plt.show()
         return
 
@@ -95,6 +100,7 @@ class MDP():
         for step in range(max_steps):
 
             index = self.states.index(state)
+            self.print(state)
 
             targets = []
             weights = []
@@ -248,7 +254,6 @@ def main():
     print(mdp.transition[None])
     print(np.sum(mdp.transition[None], axis = 1))
     print(mdp.possible_actions)
-    mdp.print()
     mdp.simulate()
 
 
