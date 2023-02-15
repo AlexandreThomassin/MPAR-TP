@@ -28,6 +28,10 @@ class MDP():
         # Possible actions for every state
         self.possible_actions = {}
 
+        self.graph = ""
+
+        self.blue_state = ""
+
     def summary(self):
         print("Markovian Decision Process Summary")
         print("----------------------------------")
@@ -49,12 +53,10 @@ class MDP():
                     self.transition[None][index][index] = 1
 
 
-    def print(self, c_state):
-        graph = pydot.Dot('Markov Chain Representation', graph_type='graph', bgcolor='white')
+    def print(self):
+        self.graph = pydot.Dot('Markov Chain Representation', graph_type='graph', bgcolor='white')
         states_graph = [pydot.Node(state, label = state) for state in self.states]
-        states_graph[self.states.index(c_state)].set_style('filled')
-        states_graph[self.states.index(c_state)].set_fillcolor('blue')
-        for state in states_graph: graph.add_node(state)
+        for state in states_graph: self.graph.add_node(state)
         for source in self.states:
             index = self.states.index(source)
             possible_actions = self.possible_actions[source]
@@ -63,16 +65,16 @@ class MDP():
                 targets = [self.states[i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
                 weights = [self.transition[None][index][i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
                 for i in range(len(targets)):
-                    graph.add_edge(pydot.Edge(source, targets[i], color='black', label = weights[i], arrowhead = 'normal', dir='forward'))
+                    self.graph.add_edge(pydot.Edge(source, targets[i], color='black', label = weights[i], arrowhead = 'normal', dir='forward'))
             else:
                 for act in possible_actions:
-                    graph.add_node(pydot.Node(f"{source}-{act}", shape = "point"))
-                    graph.add_edge(pydot.Edge(source, f"{source}-{act}", color='black', label = act, arrowhead = 'normal', dir='forward'))
+                    self.graph.add_node(pydot.Node(f"{source}-{act}", shape = "point"))
+                    self.graph.add_edge(pydot.Edge(source, f"{source}-{act}", color='black', label = act, arrowhead = 'normal', dir='forward'))
                     targets = [self.states[i] for i in range(len(self.states)) if self.transition[act][index][i] != 0]
                     weights = [self.transition[act][index][i] for i in range(len(self.states)) if self.transition[act][index][i] != 0]
                     for i in range(len(targets)):
-                        graph.add_edge(pydot.Edge(f"{source}-{act}", targets[i], color='black', label = weights[i], arrowhead = 'normal', dir='forward'))
-        png_str = graph.create_png(prog='dot')
+                        self.graph.add_edge(pydot.Edge(f"{source}-{act}", targets[i], color='black', label = weights[i], arrowhead = 'normal', dir='forward'))
+        png_str = self.graph.create_png(prog='dot')
 
         # treat the DOT output as an image file
         sio = io.BytesIO()
@@ -87,10 +89,30 @@ class MDP():
         plt.show()
         return
 
+    def update(self, c_state):
+        if self.blue_state in self.states:
+            self.graph.add_node(pydot.Node(self.blue_state, label = self.blue_state, style = ""))
+        if c_state in self.states:
+            self.graph.add_node(pydot.Node(c_state, label = c_state, style = "filled", fillcolor = 'blue'))
+            self.blue_state = c_state
+        png_str = self.graph.create_png(prog='dot')
+
+        # treat the DOT output as an image file
+        sio = io.BytesIO()
+        sio.write(png_str)
+        sio.seek(0)
+        img = mpimg.imread(sio)
+
+        # plot the image
+        imgplot = plt.imshow(img, aspect='equal')
+        plt.pause(0.01)
+        plt.ion()
+        plt.show()
+        return
 
     def simulate(self, max_steps = 100):
         auto = input("Simulation automatique ? Y/N \n")
-        animate = input("Affichage graphique? Y/N \n")
+        animate = input("Animation graphique? Y/N \n")
         print("\nStarting Simulation\n--------------------")
         print("Max transitions : " + str(max_steps)+ "\n--------------------")
         print("Starting states : " + str(self.states[0]))
@@ -101,7 +123,7 @@ class MDP():
 
             index = self.states.index(state)
             if animate == 'Y':
-                self.print(state)
+                self.update(state)
 
             targets = []
             weights = []
@@ -141,6 +163,8 @@ class MDP():
                 choice = random.choices(targets, weights = weights)
                 print("Transition from " + state + " to " + choice[0])
                 state = choice[0]
+        if animate == 'Y':
+            self.update(state)
 
         
 class gramPrintListener(gramListener):
@@ -255,6 +279,7 @@ def main():
     print(mdp.transition[None])
     print(np.sum(mdp.transition[None], axis = 1))
     print(mdp.possible_actions)
+    mdp.print()
     mdp.simulate()
     input("Press Enter to end program")
 
