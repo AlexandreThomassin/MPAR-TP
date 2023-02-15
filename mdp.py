@@ -20,12 +20,28 @@ class MDP():
         # Transition matrix
         self.transition = {}
 
+        # Possible actions for every state
+        self.possible_actions = {}
+
     def summary(self):
         print("Markovian Decision Process Summary")
         print("----------------------------------")
         print("States : " + str(self.states))
-        print("Actions : " + str(self.states))
+        print("Actions : " + str(self.actions))
 
+    def MDP_test(self):
+        
+        # Test if state has transition with actions and without actions
+        for state in self.states:
+            index = self.states.index(state)
+            if None in self.possible_actions[state] and len(self.possible_actions[state]) != 1:
+                        print(f"WARNING : The state {state} has transition both with actions and without actions !")
+                        print("When simulate it will choose the path without actions.")
+
+            if len(self.possible_actions) == 0:
+                    print(f"WARNING : The state {state} has no transitions to other state.")
+                    print("By default a transition on himself is added.")
+                    self.transition[None][index][index] = 1
 
 
     def print(self):
@@ -38,26 +54,20 @@ class MDP():
         print("Starting states : " + str(self.states[0]))
 
         state = self.states[0]
-        t = 0
 
         for step in range(max_steps):
 
             index = self.states.index(state)
-            possible_actions = []
-            for act in self.transition.keys():
-                if np.sum(self.transition[act], axis=1)[index] != 0:
-                    possible_actions.append(act)
 
             targets = []
             weights = []
 
-            if None in possible_actions:
+            if None in self.possible_actions[state]:
                 targets = [self.states[i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
                 weights = [self.transition[None][index][i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
 
                 if len(targets) == 1 and targets[0] == state:
-                    break
-                if len(targets) == 0:
+                    print("This state loop on himself, ending simulation.")
                     break
 
                 choice = random.choices(targets, weights = weights)
@@ -66,18 +76,23 @@ class MDP():
                 
 
             else:
+                loop = True
+                for act in self.possible_actions[state]:
+                    targets = [self.states[i] for i in range(len(self.states)) if self.transition[act][index][i] != 0]
+                    if not (len(targets) == 1 and targets[0] == state):
+                         loop = False
+                       
+                if loop:
+                    print("This state loop on himself, ending simulation.")
+                    break
+
                 if auto == "N" :
-                    act = input("Choisissez une action parmi les suivantes : " + str(possible_actions) + "\n")
+                    act = input("Choisissez une action parmi les suivantes : " + str(self.possible_actions[state]) + "\n")
                 else:
-                    act = random.choice(possible_actions)
+                    act = random.choice(self.possible_actions[state])
 
                 targets = [self.states[i] for i in range(len(self.states)) if self.transition[act][index][i] != 0]
                 weights = [self.transition[act][index][i] for i in range(len(self.states)) if self.transition[act][index][i] != 0]
-
-                if len(targets) == 1 and targets[0] == state:
-                    break
-                if len(targets) == 0:
-                    break
 
                 choice = random.choices(targets, weights = weights)
                 print("Transition from " + state + " to " + choice[0])
@@ -88,16 +103,36 @@ class gramPrintListener(gramListener):
 
     def __init__(self):
         self.mdp = MDP()
+
+    # Enter a parse tree produced by gramParser#program.
+    def enterProgram(self, ctx:gramParser.ProgramContext):
+        print("Begin Parsing")
+        print("-------------\n")
+
+    # Exit a parse tree produced by gramParser#program.
+    def exitProgram(self, ctx:gramParser.ProgramContext):
+    
+        print("\n--------------")
+        print("End of parsing")
+        print("")
+        print("Begin testing")
+        print("--------------")
+        self.mdp.MDP_test()
+        print("--------------")
+        print("End testing")
+        print("")
+        self.mdp.summary()
+
         
     def enterDefstates(self, ctx):
         states = [str(x) for x in ctx.ID()]
         self.mdp.states = states
-        print("States: %s" % str(states))
+        print("States defined by the user : %s" % str(states))
 
     def enterDefactions(self, ctx):
         actions = [str(x) for x in ctx.ID()]
         self.mdp.actions = actions
-        print("Actions: %s" % str(actions))
+        print("Actions defined by the user : %s" % str(actions))
 
     def enterTransact(self, ctx):
         ids = [str(x) for x in ctx.ID()]
@@ -106,7 +141,17 @@ class gramPrintListener(gramListener):
         weights = [int(str(x)) for x in ctx.INT()]
         print("Transition from " + dep + " with action "+ act + " and targets " + str(ids) + " with weights " + str(weights))
 
+        if dep not in self.mdp.states:
+            print(f"WARNING : The state {dep} was not defined, it's added automatically")
+            self.mdp.states.append(dep)
+        
+        for id in ids:
+            if str(id) not in self.mdp.states:
+                print(f"WARNING : The state {str(id)} was not defined, it's added automatically")
+                self.mdp.states.append(dep)
+
         if act not in self.mdp.actions:
+            print(f"WARNING : The action {act} was not defined, it's added automatically.")
             self.mdp.actions.append(act)
 
         if act not in self.mdp.transition.keys():
@@ -114,6 +159,11 @@ class gramPrintListener(gramListener):
 
         for (id, weight) in zip(ids, weights):
             self.mdp.transition[act][self.mdp.states.index(dep), self.mdp.states.index(id)] = weight
+
+        if dep not in self.mdp.possible_actions.keys():
+            self.mdp.possible_actions[dep] = []
+
+        self.mdp.possible_actions[dep].append(act)
         
     def enterTransnoact(self, ctx):
         ids = [str(x) for x in ctx.ID()]
@@ -121,11 +171,25 @@ class gramPrintListener(gramListener):
         weights = [int(str(x)) for x in ctx.INT()]
         print("Transition from " + dep + " with no action and targets " + str(ids) + " with weights " + str(weights))
 
+        if dep not in self.mdp.states:
+            print(f"WARNING : The state {dep} was not defined, it's added automatically")
+            self.mdp.states.append(dep)
+
+        for id in ids:
+            if str(id) not in self.mdp.states:
+                print(f"WARNING : The state {str(id)} was not defined, it's added automatically")
+                self.mdp.states.append(dep)
+
         if None not in self.mdp.transition.keys():
             self.mdp.transition[None] = np.zeros((len(self.mdp.states), len(self.mdp.states)))
 
         for (id, weight) in zip(ids, weights):
             self.mdp.transition[None][self.mdp.states.index(dep), self.mdp.states.index(id)] = weight
+
+        if dep not in self.mdp.possible_actions.keys():
+            self.mdp.possible_actions[dep] = []
+
+        self.mdp.possible_actions[dep].append(None)
 
     @property
     def getMDP(self):
@@ -141,10 +205,12 @@ def main():
     printer = gramPrintListener()
     walker = ParseTreeWalker()
     walker.walk(printer, tree)
+    
 
     mdp = printer.getMDP
     print(mdp.transition[None])
     print(np.sum(mdp.transition[None], axis = 1))
+    print(mdp.possible_actions)
     mdp.simulate()
 
 
