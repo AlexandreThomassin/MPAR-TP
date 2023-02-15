@@ -6,6 +6,11 @@ import sys
 import numpy as np
 import random
 
+import pydot
+import io
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+
 class MDP():
     def __init__(self):
         """
@@ -45,7 +50,39 @@ class MDP():
 
 
     def print(self):
-        pass
+        graph = pydot.Dot('Markov Chain Representation', graph_type='graph', bgcolor='white')
+        states_graph = [pydot.Node(state, label = state) for state in self.states]
+        for state in states_graph: graph.add_node(state)
+        for source in self.states:
+            index = self.states.index(source)
+            possible_actions = self.possible_actions[source]
+            
+            if None in possible_actions:
+                targets = [self.states[i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
+                weights = [self.transition[None][index][i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
+                for i in range(len(targets)):
+                    graph.add_edge(pydot.Edge(source, targets[i], color='black', label = weights[i], arrowhead = 'normal', dir='forward'))
+            else:
+                for act in possible_actions:
+                    graph.add_node(pydot.Node(f"{source}-{act}", shape = "point"))
+                    graph.add_edge(pydot.Edge(source, f"{source}-{act}", color='black', label = act, arrowhead = 'normal', dir='forward'))
+                    targets = [self.states[i] for i in range(len(self.states)) if self.transition[act][index][i] != 0]
+                    weights = [self.transition[act][index][i] for i in range(len(self.states)) if self.transition[act][index][i] != 0]
+                    for i in range(len(targets)):
+                        graph.add_edge(pydot.Edge(f"{source}-{act}", targets[i], color='black', label = weights[i], arrowhead = 'normal', dir='forward'))
+        png_str = graph.create_png(prog='dot')
+
+        # treat the DOT output as an image file
+        sio = io.BytesIO()
+        sio.write(png_str)
+        sio.seek(0)
+        img = mpimg.imread(sio)
+
+        # plot the image
+        imgplot = plt.imshow(img, aspect='equal')
+        plt.show()
+        return
+
 
     def simulate(self, max_steps = 100):
         auto = input("Simulation automatique ? Y/N \n")
@@ -211,6 +248,7 @@ def main():
     print(mdp.transition[None])
     print(np.sum(mdp.transition[None], axis = 1))
     print(mdp.possible_actions)
+    mdp.print()
     mdp.simulate()
 
 
