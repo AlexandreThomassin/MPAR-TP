@@ -154,6 +154,9 @@ class MDP():
 
                 if auto == "N" :
                     act = input("Choisissez une action parmi les suivantes : " + str(self.possible_actions[state]) + "\n")
+                    while act not in self.possible_actions[state]:
+                        print("L'action ne fais pas parti des actions possible, veuillez ressayez")
+                        act = input("Choisissez une action parmi les suivantes : " + str(self.possible_actions[state]) + "\n")
                 else:
                     act = random.choice(self.possible_actions[state])
 
