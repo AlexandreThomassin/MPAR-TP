@@ -28,6 +28,9 @@ class MDP():
         # Possible actions for every state
         self.possible_actions = {}
 
+        # Accessible states
+        self.accessible = []
+
         self.graph = ""
 
         self.blue_state = ""
@@ -37,6 +40,11 @@ class MDP():
         print("----------------------------------")
         print("States : " + str(self.states))
         print("Actions : " + str(self.actions))
+        print(self.accessible)
+        if sorted(self.accessible) == sorted(self.states):
+            print("Tous les états sont accessibles")
+        else:
+            print(f"Les états suivants ne sont pas accessible : {list(set(self.states) - set(self.accessible))}")
 
     def MDP_test(self):
         
@@ -51,7 +59,8 @@ class MDP():
                     print(f"WARNING : The state {state} has no transitions to other state.")
                     print("By default a transition on himself is added.")
                     self.transition[None][index][index] = 1
-
+        if set(self.accessible) != set(self.states):
+            print(f"WARNING : Les états suivants ne sont pas accessible : {list(set(self.states) - set(self.accessible))}")
 
     def print(self):
         self.graph = pydot.Dot('Markov Chain Representation', graph_type='graph', bgcolor='white')
@@ -219,7 +228,9 @@ class gramPrintListener(gramListener):
         for id in ids:
             if str(id) not in self.mdp.states:
                 print(f"WARNING : The state {str(id)} was not defined, it's added automatically")
-                self.mdp.states.append(dep)
+                self.mdp.states.append(str(id))
+            if str(id) not in self.mdp.accessible:
+                self.mdp.accessible.append(str(id))
 
         if act not in self.mdp.actions:
             print(f"WARNING : The action {act} was not defined, it's added automatically.")
@@ -235,6 +246,7 @@ class gramPrintListener(gramListener):
             self.mdp.possible_actions[dep] = []
 
         self.mdp.possible_actions[dep].append(act)
+
         
     def enterTransnoact(self, ctx):
         ids = [str(x) for x in ctx.ID()]
@@ -249,7 +261,9 @@ class gramPrintListener(gramListener):
         for id in ids:
             if str(id) not in self.mdp.states:
                 print(f"WARNING : The state {str(id)} was not defined, it's added automatically")
-                self.mdp.states.append(dep)
+                self.mdp.states.append(str(id))
+            if str(id) not in self.mdp.accessible:
+                self.mdp.accessible.append(str(id))
 
         if None not in self.mdp.transition.keys():
             self.mdp.transition[None] = np.zeros((len(self.mdp.states), len(self.mdp.states)))
