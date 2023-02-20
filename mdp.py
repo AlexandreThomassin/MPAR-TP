@@ -53,18 +53,18 @@ class MDP():
             index = self.states.index(state)
             if state not in self.possible_actions.keys():
                     print(f"WARNING : The state {state} has no transitions to other state.")
-                    print("By default a transition on himself is added.")
+                    print("By default a transition on himself is added.\n")
                     self.transition[None][index][index] = 1
                     self.possible_actions[state] = [None]
 
             if None in self.possible_actions[state] and len(self.possible_actions[state]) != 1:
                         print(f"WARNING : The state {state} has transition both with actions and without actions !")
-                        print("When simulate it will choose the path without actions.")
+                        print("When simulate it will choose the path without actions.\n")
 
             
                     
         if set(self.accessible) != set(self.states):
-            print(f"WARNING : Les états suivants ne sont pas accessible : {list(set(self.states) - set(self.accessible))}")
+            print(f"WARNING : Les états suivants ne sont pas accessible : {list(set(self.states) - set(self.accessible))}\n")
 
     def print(self):
         self.graph = pydot.Dot('Markov Chain Representation', graph_type='graph', bgcolor='white')
@@ -97,7 +97,7 @@ class MDP():
 
         # plot the image
 
-        fig = plt.figure(figsize=(10,7))
+        fig = plt.figure(figsize=(9,7))
 
         font = {'family': 'serif',
         'color':  'black',
@@ -128,11 +128,21 @@ class MDP():
         img = mpimg.imread(sio)
 
         # plot the image
+
+        font = {'family': 'serif',
+        'color':  'black',
+        'weight': 'bold',
+        'size': 20,
+        }
+
+        plt.rcParams["figure.figsize"] = (9,7)
+
         imgplot = plt.imshow(img, aspect='equal')
+        plt.axis("off")
+        plt.title("Simulation \n", fontdict=font)
         plt.pause(0.01)
         plt.ion()
         plt.show()
-        return
 
     def simulate(self, max_steps = 100):
         auto = input("Simulation automatique ? Y/N \n")
