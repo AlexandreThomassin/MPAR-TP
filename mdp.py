@@ -51,14 +51,18 @@ class MDP():
         # Test if state has transition with actions and without actions
         for state in self.states:
             index = self.states.index(state)
+            if state not in self.possible_actions.keys():
+                    print(f"WARNING : The state {state} has no transitions to other state.")
+                    print("By default a transition on himself is added.")
+                    self.transition[None][index][index] = 1
+                    self.possible_actions[state] = [None]
+
             if None in self.possible_actions[state] and len(self.possible_actions[state]) != 1:
                         print(f"WARNING : The state {state} has transition both with actions and without actions !")
                         print("When simulate it will choose the path without actions.")
 
-            if len(self.possible_actions) == 0:
-                    print(f"WARNING : The state {state} has no transitions to other state.")
-                    print("By default a transition on himself is added.")
-                    self.transition[None][index][index] = 1
+            
+                    
         if set(self.accessible) != set(self.states):
             print(f"WARNING : Les états suivants ne sont pas accessible : {list(set(self.states) - set(self.accessible))}")
 
@@ -92,7 +96,18 @@ class MDP():
         img = mpimg.imread(sio)
 
         # plot the image
+
+        fig = plt.figure(figsize=(10,7))
+
+        font = {'family': 'serif',
+        'color':  'black',
+        'weight': 'bold',
+        'size': 20,
+        }
+
         imgplot = plt.imshow(img, aspect='equal')
+        plt.axis("off")
+        plt.title("Simulation \n", fontdict=font)
         plt.pause(0.01)
         plt.ion()
         plt.show()
@@ -283,7 +298,7 @@ class gramPrintListener(gramListener):
             
 
 def main():
-    lexer = gramLexer(FileStream("ex.mdp"))
+    lexer = gramLexer(FileStream("ex2.mdp"))
     stream = CommonTokenStream(lexer)
     parser = gramParser(stream)
     tree = parser.program()
