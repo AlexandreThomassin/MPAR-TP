@@ -246,6 +246,15 @@ class gramPrintListener(gramListener):
         weights = [int(str(x)) for x in ctx.INT()]
         print("Transition from " + dep + " with action "+ act + " and targets " + str(ids) + " with weights " + str(weights))
 
+        for i in range(len(weights)):
+            if weights[i] < 0: weights[i] == 0
+        
+        if sum(weights) <= 0:
+            print("WARNING: Weights for this action are equal to 0")
+            print("This action will not be added")
+            return
+
+
         if dep not in self.mdp.states:
             print(f"WARNING : The state {dep} was not defined, it's added automatically")
             self.mdp.states.append(dep)
@@ -278,6 +287,14 @@ class gramPrintListener(gramListener):
         dep = ids.pop(0)
         weights = [int(str(x)) for x in ctx.INT()]
         print("Transition from " + dep + " with no action and targets " + str(ids) + " with weights " + str(weights))
+
+        for i in range(len(weights)):
+            if weights[i] < 0: weights[i] == 0
+        
+        if sum(weights) <= 0:
+            print("WARNING: Weights for this action are equal to 0")
+            print("This action will not be added")
+            return
 
         if dep not in self.mdp.states:
             print(f"WARNING : The state {dep} was not defined, it's added automatically")
@@ -318,12 +335,12 @@ def main():
     
 
     mdp = printer.getMDP
-    print(mdp.transition[None])
-    print(np.sum(mdp.transition[None], axis = 1))
-    print(mdp.possible_actions)
+#    print(mdp.transition[None])
+#    print(np.sum(mdp.transition[None], axis = 1))
+#    print(mdp.possible_actions)
     mdp.print()
     mdp.simulate()
-    input("Press Enter to end program")
+#    input("Press Enter to end program")
 
 
 if __name__ == '__main__':
