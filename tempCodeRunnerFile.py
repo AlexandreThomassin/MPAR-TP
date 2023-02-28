@@ -1,0 +1,1 @@
+np.zeros((len(self.mdp.states), len(self.mdp.states)))

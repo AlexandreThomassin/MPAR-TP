@@ -47,6 +47,15 @@ class MDP():
             print(f"Les états suivants ne sont pas accessible : {list(set(self.states) - set(self.accessible))}")
 
     def MDP_test(self):
+
+        for act in self.actions:
+            if len(self.transition[act]) != len(self.states):
+                diff = abs(len(self.transition[act]) != len(self.states))
+                self.transition[act] = np.pad(self.transition[act], ((0,diff),(0,diff)))
+
+        if len(self.transition[None]) != len(self.states):
+            diff = abs(len(self.transition[None]) != len(self.states))
+            self.transition[None] = np.pad(self.transition[None], ((0,diff),(0,diff)))
         
         # Test if state has transition with actions and without actions
         for state in self.states:
@@ -54,6 +63,9 @@ class MDP():
             if state not in self.possible_actions.keys():
                     print(f"WARNING : The state {state} has no transitions to other state.")
                     print("By default a transition on himself is added.\n")
+                    if None not in self.transition.keys():
+                        self.transition[None] = np.zeros((len(self.states), len(self.states)))
+
                     self.transition[None][index][index] = 1
                     self.possible_actions[state] = [None]
 
@@ -145,6 +157,11 @@ class MDP():
         plt.show()
 
     def simulate(self, max_steps = 100):
+        if len(self.states)==0:
+            print("Il n'y pas d\'états, simulation impossible")
+            return
+
+
         auto = input("Simulation automatique ? Y/N \n")
         animate = input("Animation graphique? Y/N \n")
         print("\nStarting Simulation\n--------------------")
@@ -171,7 +188,7 @@ class MDP():
                     break
 
                 choice = random.choices(targets, weights = weights)
-                print("Transition from " + state + " to " + choice[0])
+                print(str(step) + ": Transition from " + state + " to " + choice[0])
                 state = choice[0]
                 
 
@@ -198,7 +215,7 @@ class MDP():
                 weights = [self.transition[act][index][i] for i in range(len(self.states)) if self.transition[act][index][i] != 0]
 
                 choice = random.choices(targets, weights = weights)
-                print("Transition from " + state + " to " + choice[0])
+                print(str(step) + ": Transition from " + state + " to " + choice[0])
                 state = choice[0]
         if animate == 'Y':
             self.update(state)
@@ -273,6 +290,10 @@ class gramPrintListener(gramListener):
         if act not in self.mdp.transition.keys():
             self.mdp.transition[act] = np.zeros((len(self.mdp.states), len(self.mdp.states)))
 
+        if len(self.mdp.transition[act]) != len(self.mdp.states):
+            diff = abs(len(self.mdp.transition[act]) != len(self.mdp.states))
+            self.mdp.transition[act] = np.pad(self.mdp.transition[act], ((0,diff),(0,diff)))
+
         for (id, weight) in zip(ids, weights):
             self.mdp.transition[act][self.mdp.states.index(dep), self.mdp.states.index(id)] = weight
 
@@ -310,6 +331,10 @@ class gramPrintListener(gramListener):
         if None not in self.mdp.transition.keys():
             self.mdp.transition[None] = np.zeros((len(self.mdp.states), len(self.mdp.states)))
 
+        if len(self.mdp.transition[None]) != len(self.mdp.states):
+            diff = abs(len(self.mdp.transition[None]) != len(self.mdp.states))
+            self.mdp.transition[None] = np.pad(self.mdp.transition[None], ((0,diff),(0,diff)))
+
         for (id, weight) in zip(ids, weights):
             self.mdp.transition[None][self.mdp.states.index(dep), self.mdp.states.index(id)] = weight
 
@@ -335,9 +360,6 @@ def main():
     
 
     mdp = printer.getMDP
-#    print(mdp.transition[None])
-#    print(np.sum(mdp.transition[None], axis = 1))
-#    print(mdp.possible_actions)
     mdp.print()
     mdp.simulate()
 #    input("Press Enter to end program")
