@@ -248,6 +248,8 @@ class gramPrintListener(gramListener):
         
     def enterDefstates(self, ctx):
         states = [str(x) for x in ctx.ID()]
+        if "<missing ID>" in states:
+            raise ValueError("Missing ID")
         self.mdp.states = states
         print("States defined by the user : %s" % str(states))
 
@@ -350,7 +352,7 @@ class gramPrintListener(gramListener):
             
 
 def main():
-    lexer = gramLexer(FileStream("ex2.mdp"))
+    lexer = gramLexer(FileStream("ex5.mdp"))
     stream = CommonTokenStream(lexer)
     parser = gramParser(stream)
     tree = parser.program()
