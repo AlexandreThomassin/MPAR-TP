@@ -249,7 +249,7 @@ class gramPrintListener(gramListener):
     def enterDefstates(self, ctx):
         states = [str(x) for x in ctx.ID()]
         if "<missing ID>" in states:
-            raise ValueError("Missing ID")
+            raise ValueError("Missing ID ")
         self.mdp.states = states
         print("States defined by the user : %s" % str(states))
 
@@ -302,6 +302,8 @@ class gramPrintListener(gramListener):
         if dep not in self.mdp.possible_actions.keys():
             self.mdp.possible_actions[dep] = []
 
+        if act in self.mdp.possible_actions[dep]:
+            print("WARNING: A transition from the same state and with the same action already exists. Only the last transaction defined will be considered.")
         self.mdp.possible_actions[dep].append(act)
 
         
@@ -364,7 +366,7 @@ def main():
     mdp = printer.getMDP
     mdp.print()
     mdp.simulate()
-#    input("Press Enter to end program")
+    input("Press Enter to end program")
 
 
 if __name__ == '__main__':
