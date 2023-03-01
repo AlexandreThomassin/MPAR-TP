@@ -10,6 +10,7 @@ import pydot
 import io
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import time
 
 class MDP():
     def __init__(self):
@@ -46,7 +47,30 @@ class MDP():
         else:
             print(f"Les états suivants ne sont pas accessible : {list(set(self.states) - set(self.accessible))}")
 
+        print("----------------------------------")
+
     def MDP_test(self):
+
+        issue = False
+
+        # Test if state has transition with actions and without actions
+        for state in self.states:
+            index = self.states.index(state)
+            if state not in self.possible_actions.keys():
+                    issue = True
+                    print(f"WARNING : The state {state} has no transitions to other state.")
+                    print("By default a transition on himself is added.\n")
+                    if None not in self.transition.keys():
+                        self.transition[None] = np.zeros((len(self.states), len(self.states)))
+
+                    self.transition[None][index][index] = 1
+                    self.possible_actions[state] = [None]
+
+            if None in self.possible_actions[state] and len(self.possible_actions[state]) != 1:
+                        issue = True
+                        print(f"WARNING : The state {state} has transition both with actions and without actions !")
+                        print("When simulate it will choose the path without actions.\n")
+                    
 
         for act in self.actions:
             if len(self.transition[act]) != len(self.states):
@@ -57,26 +81,12 @@ class MDP():
             diff = abs(len(self.transition[None]) != len(self.states))
             self.transition[None] = np.pad(self.transition[None], ((0,diff),(0,diff)))
         
-        # Test if state has transition with actions and without actions
-        for state in self.states:
-            index = self.states.index(state)
-            if state not in self.possible_actions.keys():
-                    print(f"WARNING : The state {state} has no transitions to other state.")
-                    print("By default a transition on himself is added.\n")
-                    if None not in self.transition.keys():
-                        self.transition[None] = np.zeros((len(self.states), len(self.states)))
-
-                    self.transition[None][index][index] = 1
-                    self.possible_actions[state] = [None]
-
-            if None in self.possible_actions[state] and len(self.possible_actions[state]) != 1:
-                        print(f"WARNING : The state {state} has transition both with actions and without actions !")
-                        print("When simulate it will choose the path without actions.\n")
-
-            
-                    
         if set(self.accessible) != set(self.states):
+            issue = True
             print(f"WARNING : Les états suivants ne sont pas accessible : {list(set(self.states) - set(self.accessible))}\n")
+
+        if not issue:
+            print("Il n'y a pas de problèmes")
 
     def print(self):
         self.graph = pydot.Dot('Markov Chain Representation', graph_type='graph', bgcolor='white')
@@ -120,16 +130,18 @@ class MDP():
         imgplot = plt.imshow(img, aspect='equal')
         plt.axis("off")
         plt.title("Simulation \n", fontdict=font)
-        plt.pause(0.01)
+        #plt.pause(0.001)
         plt.ion()
         plt.show()
         return
 
     def update(self, c_state):
+        plt.clf()
+
         if self.blue_state in self.states:
             self.graph.add_node(pydot.Node(self.blue_state, label = self.blue_state, style = ""))
         if c_state in self.states:
-            self.graph.add_node(pydot.Node(c_state, label = c_state, style = "filled", fillcolor = 'blue'))
+            self.graph.add_node(pydot.Node(c_state, label = c_state, style = "filled", fillcolor = 'cyan'))
             self.blue_state = c_state
         png_str = self.graph.create_png(prog='dot')
 
@@ -152,9 +164,10 @@ class MDP():
         imgplot = plt.imshow(img, aspect='equal')
         plt.axis("off")
         plt.title("Simulation \n", fontdict=font)
-        plt.pause(0.01)
+        plt.pause(0.2)
         plt.ion()
         plt.show()
+
 
     def simulate(self, max_steps = 100):
         if len(self.states)==0:
@@ -215,7 +228,7 @@ class MDP():
                 weights = [self.transition[act][index][i] for i in range(len(self.states)) if self.transition[act][index][i] != 0]
 
                 choice = random.choices(targets, weights = weights)
-                print(str(step) + ": Transition from " + state + " to " + choice[0])
+                print(str(step) + ": Transition from " + state + " to " + choice[0] + " using action " + act)
                 state = choice[0]
         if animate == 'Y':
             self.update(state)
@@ -256,6 +269,8 @@ class gramPrintListener(gramListener):
     def enterDefactions(self, ctx):
         actions = [str(x) for x in ctx.ID()]
         self.mdp.actions = actions
+        for act in actions: 
+            self.mdp.transition[act] = np.zeros((len(self.mdp.states),len(self.mdp.states)))
         print("Actions defined by the user : %s" % str(actions))
 
     def enterTransact(self, ctx):
@@ -354,7 +369,7 @@ class gramPrintListener(gramListener):
             
 
 def main():
-    lexer = gramLexer(FileStream("ex5.mdp"))
+    lexer = gramLexer(FileStream("simu-mc.mdp"))
     stream = CommonTokenStream(lexer)
     parser = gramParser(stream)
     tree = parser.program()
@@ -365,7 +380,7 @@ def main():
 
     mdp = printer.getMDP
     mdp.print()
-    mdp.simulate()
+    mdp.simulate(max_steps=50)
     input("Press Enter to end program")
 
 
