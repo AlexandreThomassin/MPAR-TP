@@ -233,6 +233,46 @@ class MDP():
         if animate == 'Y':
             self.update(state)
 
+    def simu(self, goal, max_steps = 100):
+        if len(self.states)==0:
+            return
+
+        state = self.states[0]
+
+        for _ in range(max_steps):
+
+            index = self.states.index(state)
+
+            targets = []
+            weights = []
+
+            if None in self.possible_actions[state]:
+                targets = [self.states[i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
+                weights = [self.transition[None][index][i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
+
+                if len(targets) == 1 and targets[0] == state:
+                    break
+
+                choice = random.choices(targets, weights = weights)
+                state = choice[0]
+
+                if state == goal:
+                    return state
+        
+        return state
+    
+
+    def MonteCarlo(self, state, max_step, eps, sigma):
+        N = int(np.ceil((np.log(2)-np.log(sigma))/((2*eps)**2)))
+        proba = 0
+        for _ in range(N):
+            sim = self.simu(state, max_step)
+            if sim == state:
+                proba += 1
+
+        return proba/N
+
+
         
 class gramPrintListener(gramListener):
 
@@ -369,7 +409,7 @@ class gramPrintListener(gramListener):
             
 
 def main():
-    lexer = gramLexer(FileStream("simu-mc.mdp"))
+    lexer = gramLexer(FileStream("dice.mdp"))
     stream = CommonTokenStream(lexer)
     parser = gramParser(stream)
     tree = parser.program()
@@ -380,7 +420,9 @@ def main():
 
     mdp = printer.getMDP
     mdp.print()
-    mdp.simulate(max_steps=50)
+    # mdp.simulate(max_steps=50)
+    proba = mdp.MonteCarlo("S2", 5, 0.01, 0.01)
+    print(proba)
     input("Press Enter to end program")
 
 
