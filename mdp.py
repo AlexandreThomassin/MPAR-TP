@@ -160,7 +160,6 @@ class MDP():
         }
 
         plt.rcParams["figure.figsize"] = (9,7)
-
         imgplot = plt.imshow(img, aspect='equal')
         plt.axis("off")
         plt.title("Simulation \n", fontdict=font)
@@ -271,6 +270,28 @@ class MDP():
                 proba += 1
 
         return proba/N
+
+    def SPRT(self, state, max_step, alpha, beta, theta, eps, N):
+        gamma1 = theta - eps
+        gamma0 = theta + eps
+        dm = 0
+        m = 0
+        logA = np.log((1 - beta)/alpha)
+        logB = np.log(beta/(1 - alpha))
+        logRm = 0
+        for _ in range(N):
+            sim = self.simu(state, max_step)
+            if sim == state:
+                logRm += np.log(gamma1) - np.log(gamma0)
+            else:
+                logRm += np.log(1 - gamma1) - np.log(1 - gamma0)
+            if logRm >= logA:
+                return "H1"
+            if logRm <= logB:
+                return "H0"
+        return False
+
+
 
 
         
@@ -421,8 +442,10 @@ def main():
     mdp = printer.getMDP
     mdp.print()
     # mdp.simulate(max_steps=50)
-    proba = mdp.MonteCarlo("S2", 5, 0.01, 0.01)
+    proba = [mdp.MonteCarlo(f"T{i}", 5, 0.01, 0.01) for i in range(1,7)]
     print(proba)
+    Hyps = [mdp.SPRT(f"T{i}", 5, 0.01, 0.01, 0.1, 0.01, 30_000) for i in range(1,7)]
+    print(Hyps)
     input("Press Enter to end program")
 
 
