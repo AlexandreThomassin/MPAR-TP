@@ -311,7 +311,6 @@ class MDP():
                 if maxi == 'nan':
                     quit()
                 new_V[i] = self.reward[i] + gamma * maxi
-            print(new_V)
             if np.linalg.norm(new_V - V) < epsilon:
                 flag = True
             V = new_V.copy()
