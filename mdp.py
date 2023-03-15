@@ -90,6 +90,11 @@ class MDP():
         if not issue:
             print("Il n'y a pas de problèmes")
 
+
+        for act in self.transition.keys():
+            for i in range(len(self.states)):
+                self.transition[act][i] = self.transition[act][i] / np.sum(self.transition[act][i])
+
     def print(self):
         self.graph = pydot.Dot('Markov Chain Representation', graph_type='graph', bgcolor='white')
         states_graph = [pydot.Node(state, label = state) for state in self.states]
@@ -297,16 +302,16 @@ class MDP():
         V = np.zeros(len(self.states))
         new_V = np.zeros(len(self.states))
         flag = False
-        print(self.reward)
+        #print(self.reward)
         while not flag:
             for i in range(len(new_V)):
                 state = self.states[i]
                 actions = self.possible_actions[state]
                 maxi = max([sum([V[j]*self.transition[a][i][j] for j in range(len(self.states))]) for a in actions])
-                print(maxi)
                 if maxi == 'nan':
                     quit()
                 new_V[i] = self.reward[i] + gamma * maxi
+            print(new_V)
             if np.linalg.norm(new_V - V) < epsilon:
                 flag = True
             V = new_V.copy()
