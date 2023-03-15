@@ -20,6 +20,8 @@ class MDP():
         # List of states
         self.states = []
 
+        self.reward = []
+
         # List of actions
         self.actions = []
 
@@ -290,6 +292,27 @@ class MDP():
             if logRm <= logB:
                 return "H0"
         return False
+    
+    def iter_values(self, gamma, epsilon):
+        V = np.zeros(len(self.states))
+        new_V = np.zeros(len(self.states))
+        flag = False
+        print(self.reward)
+        while not flag:
+            for i in range(len(new_V)):
+                state = self.states[i]
+                actions = self.possible_actions[state]
+                maxi = max([sum([V[j]*self.transition[a][i][j] for j in range(len(self.states))]) for a in actions])
+                print(maxi)
+                if maxi == 'nan':
+                    quit()
+                new_V[i] = self.reward[i] + gamma * maxi
+            if np.linalg.norm(new_V - V) < epsilon:
+                flag = True
+            V = new_V.copy()
+        return V
+
+
 
 
 
@@ -320,12 +343,29 @@ class gramPrintListener(gramListener):
         self.mdp.summary()
 
         
-    def enterDefstates(self, ctx):
+    # def enterDefstates(self, ctx):
+    #     states = [str(x) for x in ctx.ID()]
+    #     if "<missing ID>" in states:
+    #         raise ValueError("Missing ID ")
+    #     self.mdp.states = states
+    #     print("States defined by the user : %s" % str(states))
+
+    def enterStatenoreward(self, ctx):
         states = [str(x) for x in ctx.ID()]
         if "<missing ID>" in states:
             raise ValueError("Missing ID ")
         self.mdp.states = states
         print("States defined by the user : %s" % str(states))
+    
+    def enterStatereward(self, ctx):
+        states = [str(x) for x in ctx.ID()]
+        reward = [int(str(x)) for x in ctx.INT()]
+        if "<missing ID>" in states:
+            raise ValueError("Missing ID ")
+        self.mdp.states = states
+        self.mdp.reward = reward
+        print("States defined by the user : %s, cost defined by the user %s" % (str(states), str(reward)))
+
 
     def enterDefactions(self, ctx):
         actions = [str(x) for x in ctx.ID()]
@@ -430,7 +470,7 @@ class gramPrintListener(gramListener):
             
 
 def main():
-    lexer = gramLexer(FileStream("dice.mdp"))
+    lexer = gramLexer(FileStream("ex3.mdp"))
     stream = CommonTokenStream(lexer)
     parser = gramParser(stream)
     tree = parser.program()
@@ -442,10 +482,11 @@ def main():
     mdp = printer.getMDP
     mdp.print()
     # mdp.simulate(max_steps=50)
-    proba = [mdp.MonteCarlo(f"T{i}", 5, 0.01, 0.01) for i in range(1,7)]
-    print(proba)
-    Hyps = [mdp.SPRT(f"T{i}", 5, 0.01, 0.01, 0.1, 0.01, 30_000) for i in range(1,7)]
-    print(Hyps)
+    #proba = [mdp.MonteCarlo(f"T{i}", 5, 0.01, 0.01) for i in range(1,7)]
+    #print(proba)
+    #Hyps = [mdp.SPRT(f"T{i}", 5, 0.01, 0.01, 0.1, 0.01, 30_000) for i in range(1,7)]
+    #print(Hyps)
+    print(mdp.iter_values(0.5, 1))
     input("Press Enter to end program")
 
 
