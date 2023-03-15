@@ -74,14 +74,14 @@ class MDP():
                         print("When simulate it will choose the path without actions.\n")
                     
 
-        for act in self.actions:
+        for act in self.transition.keys():
             if len(self.transition[act]) != len(self.states):
                 diff = abs(len(self.transition[act]) != len(self.states))
                 self.transition[act] = np.pad(self.transition[act], ((0,diff),(0,diff)))
 
-        if len(self.transition[None]) != len(self.states):
-            diff = abs(len(self.transition[None]) != len(self.states))
-            self.transition[None] = np.pad(self.transition[None], ((0,diff),(0,diff)))
+        # if len(self.transition[None]) != len(self.states):
+        #     diff = abs(len(self.transition[None]) != len(self.states))
+        #     self.transition[None] = np.pad(self.transition[None], ((0,diff),(0,diff)))
         
         if set(self.accessible) != set(self.states):
             issue = True
@@ -93,7 +93,8 @@ class MDP():
 
         for act in self.transition.keys():
             for i in range(len(self.states)):
-                self.transition[act][i] = self.transition[act][i] / np.sum(self.transition[act][i])
+                if np.sum(self.transition[act][i]) != 0:
+                    self.transition[act][i] = self.transition[act][i] / np.sum(self.transition[act][i])
 
     def print(self):
         self.graph = pydot.Dot('Markov Chain Representation', graph_type='graph', bgcolor='white')
@@ -308,15 +309,54 @@ class MDP():
                 state = self.states[i]
                 actions = self.possible_actions[state]
                 maxi = max([sum([V[j]*self.transition[a][i][j] for j in range(len(self.states))]) for a in actions])
-                if maxi == 'nan':
-                    quit()
                 new_V[i] = self.reward[i] + gamma * maxi
             if np.linalg.norm(new_V - V) < epsilon:
                 flag = True
             V = new_V.copy()
         return V
 
+    def Q_simu(self, state, act):
 
+        index = self.states.index(state)
+
+        targets = []
+        weights = []
+
+        targets = [self.states[i] for i in range(len(self.states)) if self.transition[act][index][i] != 0]
+        weights = [self.transition[act][index][i] for i in range(len(self.states)) if self.transition[act][index][i] != 0]
+
+
+        choice = random.choices(targets, weights = weights)
+        state = choice[0]
+        index = self.states.index(state)
+
+        return state
+    
+
+    def Q_Learning(self, T_tot, gamma):
+        Q = np.zeros((len(self.states), len(self.actions)))
+        alpha = np.ones((len(self.states), len(self.actions)))
+        #print(Q)
+        state = self.states[0]
+        index_state = self.states.index(state)
+
+        for t in range(T_tot):
+            act = random.choice(self.possible_actions[state])
+            new_state = self.Q_simu(state, act)
+
+            index_new_state = self.states.index(new_state)
+            index_act = self.actions.index(act)
+
+            alpha[index_state][index_act]+=1
+
+            # Update de la fonction Q
+            delta = self.reward[index_state] + gamma*max(Q[index_new_state]) - Q[index_state][index_act]
+            Q[index_state][index_act] += (1/alpha[index_state][index_act])*delta
+
+            state = new_state
+            index_state = self.states.index(state)
+
+        return Q
 
 
 
@@ -484,13 +524,16 @@ def main():
     
 
     mdp = printer.getMDP
-    mdp.print()
+    print(mdp.transition)
+    #mdp.print()
     # mdp.simulate(max_steps=50)
     #proba = [mdp.MonteCarlo(f"T{i}", 5, 0.01, 0.01) for i in range(1,7)]
     #print(proba)
     #Hyps = [mdp.SPRT(f"T{i}", 5, 0.01, 0.01, 0.1, 0.01, 30_000) for i in range(1,7)]
     #print(Hyps)
     print(mdp.iter_values(0.5, 1))
+    Q = mdp.Q_Learning(10000, 0.5)
+    print(Q)
     input("Press Enter to end program")
 
 
