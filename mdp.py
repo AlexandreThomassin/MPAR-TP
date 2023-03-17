@@ -358,6 +358,24 @@ class MDP():
 
         return Q
 
+    def modelcheck(self, final_state):
+        """
+        Calcule P(♦s)
+        """
+        S0 = []
+        S1 = [final_state]
+        A = np.array(self.transition[None].copy())
+        index_S0 = [self.states.index(s) for s in S0]
+        index_S1 = [self.states.index(s) for s in S1]
+        A = np.delete(A, index_S0 + index_S1, axis = 1)
+        print(A)
+        b = np.take(A, index_S1, axis = 0)
+        print(b)
+        b = np.sum(b)
+        A = np.delete(A, index_S0 + index_S1, axis = 0)
+        M = np.eye(A.shape[0]) - A
+        A = np.linalg.solve(M,b)
+        return A
 
 
 
@@ -514,7 +532,7 @@ class gramPrintListener(gramListener):
             
 
 def main():
-    lexer = gramLexer(FileStream("ex3.mdp"))
+    lexer = gramLexer(FileStream("simu-mc.mdp"))
     stream = CommonTokenStream(lexer)
     parser = gramParser(stream)
     tree = parser.program()
@@ -531,9 +549,10 @@ def main():
     #print(proba)
     #Hyps = [mdp.SPRT(f"T{i}", 5, 0.01, 0.01, 0.1, 0.01, 30_000) for i in range(1,7)]
     #print(Hyps)
-    print(mdp.iter_values(0.5, 1))
-    Q = mdp.Q_Learning(10000, 0.5)
-    print(Q)
+    # print(mdp.iter_values(0.5, 1))
+    # Q = mdp.Q_Learning(10000, 0.5)
+    # print(Q)
+    print(mdp.modelcheck("S6"))
     input("Press Enter to end program")
 
 
