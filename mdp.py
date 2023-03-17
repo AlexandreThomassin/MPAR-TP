@@ -313,7 +313,15 @@ class MDP():
             if np.linalg.norm(new_V - V) < epsilon:
                 flag = True
             V = new_V.copy()
-        return V
+        sigma = [None]*len(self.states)
+        for s in self.states:
+            i = self.states.index(s)
+            actions = self.possible_actions[s]
+            maxi = [sum([V[j]*self.transition[a][i][j] for j in range(len(self.states))]) for a in actions]
+            arg = np.argmax([self.reward[i] + gamma * maxi[a] for a in range(len(actions))])
+            sigma[i] = actions[np.argmax([self.reward[i] + gamma * maxi[a] for a in range(len(actions))])]
+
+        return V, sigma
 
     def Q_simu(self, state, act):
 
@@ -358,24 +366,39 @@ class MDP():
 
         return Q
 
-    def modelcheck(self, final_state):
+    def modelcheckMC(self, final_state, n = None):
         """
         Calcule P(♦s)
         """
-        S0 = []
-        S1 = [final_state]
-        A = np.array(self.transition[None].copy())
-        index_S0 = [self.states.index(s) for s in S0]
+        for state in self.states:
+            if not self.possible_actions[state] == [None]:
+                print("WARNING: You are trying to use the modelcheckMC with a MDP, changing to modelcheckMDP")
+                return self.modelcheckMDP(final_state, n)
+        if type(final_state) is list:
+            S1 = final_state
+        else:
+            S1 = [final_state]
         index_S1 = [self.states.index(s) for s in S1]
-        A = np.delete(A, index_S0 + index_S1, axis = 1)
-        print(A)
-        b = np.take(A, index_S1, axis = 0)
-        print(b)
-        b = np.sum(b)
+
+        A = np.array(self.transition[None].copy())
+        S0 = [self.states[s] for s in range(len(self.states)) if s not in index_S1 and A[s][s] >= 1.]
+        index_S0 = [self.states.index(s) for s in S0]
+        
         A = np.delete(A, index_S0 + index_S1, axis = 0)
+        b = np.take(A, index_S1, axis = 1)
+        b = np.sum(b, axis = 1)
+        b = b.reshape((A.shape[0], 1))
+        A = np.delete(A, index_S0 + index_S1, axis = 1)
         M = np.eye(A.shape[0]) - A
-        A = np.linalg.solve(M,b)
-        return A
+        #print(A)
+        #print(b)
+        if n is None:
+            y = np.linalg.solve(M,b)
+        else:
+            y = np.zeros((A.shape[0],1))
+            for _ in range(n):
+                y = np.dot(A, y) + b
+        return y
 
 
 
@@ -532,7 +555,7 @@ class gramPrintListener(gramListener):
             
 
 def main():
-    lexer = gramLexer(FileStream("simu-mc.mdp"))
+    lexer = gramLexer(FileStream("simu-mdp.mdp"))
     stream = CommonTokenStream(lexer)
     parser = gramParser(stream)
     tree = parser.program()
@@ -542,17 +565,17 @@ def main():
     
 
     mdp = printer.getMDP
-    print(mdp.transition)
+    #print(mdp.transition)
     #mdp.print()
     # mdp.simulate(max_steps=50)
     #proba = [mdp.MonteCarlo(f"T{i}", 5, 0.01, 0.01) for i in range(1,7)]
     #print(proba)
     #Hyps = [mdp.SPRT(f"T{i}", 5, 0.01, 0.01, 0.1, 0.01, 30_000) for i in range(1,7)]
     #print(Hyps)
-    # print(mdp.iter_values(0.5, 1))
+    print(mdp.iter_values(0.5, 1))
     # Q = mdp.Q_Learning(10000, 0.5)
     # print(Q)
-    print(mdp.modelcheck("S6"))
+    #print(mdp.modelcheck("F", 10))
     input("Press Enter to end program")
 
 
