@@ -4,6 +4,7 @@ from gramListener import gramListener
 from gramParser import gramParser
 import sys
 import numpy as np
+import scipy as sp
 import random
 
 import pydot
@@ -11,6 +12,8 @@ import io
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import time
+
+np.set_printoptions(threshold=sys.maxsize)
 
 class MDP():
     def __init__(self):
@@ -392,6 +395,8 @@ class MDP():
         M = np.eye(A.shape[0]) - A
         #print(A)
         #print(b)
+
+        # Compute gamma_n
         if n is None:
             y = np.linalg.solve(M,b)
         else:
@@ -400,6 +405,80 @@ class MDP():
                 y = np.dot(A, y) + b
         return y
 
+    def modelcheckMDP(self, final_state):
+
+        S1 = [final_state]
+
+        S0 = []
+        for state in self.states:
+            loop = True
+            for act in self.transition.keys():
+                index = self.states.index(state)
+                if self.transition[act][index][index] != 1:
+                    loop = False
+                
+            if loop == True and state not in S1:
+                S0.append(state)
+
+        print("S1 :" + str(S1))
+        print("S0 :" + str(S0))
+
+        index_S0 = [self.states.index(S) for S in S0]
+        
+        index_S1 = [self.states.index(S) for S in S1]
+
+
+        len_S = len(self.states) - len(S0) - len(S1)
+        S = np.delete(self.states,index_S0+index_S1)
+        # print(len_S, len(S))
+
+        total_lines = sum([len(self.possible_actions[s])+2 for s in S])
+
+        # Define A and b
+        A = np.zeros((total_lines, len_S))
+        b = np.zeros((total_lines))
+
+        # print(A.shape)
+        # print(b.shape)
+
+        i = 0
+        j = 0
+        for state in S:
+            index = self.states.index(state)
+            for act in self.possible_actions[state]:
+                A[i] = -np.delete(self.transition[act][index], index_S0+index_S1)
+                A[i][j]+=1
+                b[i] = np.sum(np.take(self.transition[act][index],index_S1))
+                i+=1
+
+            A[i][j] = 1
+            
+            i+=1
+            A[i][j] = -1
+            b[i] = -1
+            i+=1
+            j+=1
+        
+        print("A :" + str(A))
+        print("b :" + str(b))
+        c = np.ones(A.shape[1])
+
+
+        # print(c.shape)
+
+        l = np.zeros(A.shape[1])
+        u = np.ones(A.shape[1])
+        bounds = list(zip(l,u))
+
+        print(-c)
+
+        # Min probability
+        min_proba = sp.optimize.linprog(-c, A, b).x
+
+        # Max probability
+        max_proba = sp.optimize.linprog(c,-A,-b).x
+
+        return (min_proba,max_proba)
 
 
         
@@ -555,7 +634,7 @@ class gramPrintListener(gramListener):
             
 
 def main():
-    lexer = gramLexer(FileStream("simu-mdp.mdp"))
+    lexer = gramLexer(FileStream("ex3.mdp"))
     stream = CommonTokenStream(lexer)
     parser = gramParser(stream)
     tree = parser.program()
