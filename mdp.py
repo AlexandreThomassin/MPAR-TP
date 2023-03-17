@@ -302,7 +302,9 @@ class MDP():
                 return "H0"
         return False
     
-    def iter_values(self, gamma, epsilon):
+    def iter_values(self, gamma, epsilon, sens = "max"):
+        if sens not in ["max", "min"]:
+            raise ValueError("sens is either max or min")
         V = np.zeros(len(self.states))
         new_V = np.zeros(len(self.states))
         flag = False
@@ -311,7 +313,10 @@ class MDP():
             for i in range(len(new_V)):
                 state = self.states[i]
                 actions = self.possible_actions[state]
-                maxi = max([sum([V[j]*self.transition[a][i][j] for j in range(len(self.states))]) for a in actions])
+                if sens == "max":
+                    maxi = max([sum([V[j]*self.transition[a][i][j] for j in range(len(self.states))]) for a in actions])
+                elif sens == "min":
+                    maxi = min([sum([V[j]*self.transition[a][i][j] for j in range(len(self.states))]) for a in actions])
                 new_V[i] = self.reward[i] + gamma * maxi
             if np.linalg.norm(new_V - V) < epsilon:
                 flag = True
@@ -321,7 +326,10 @@ class MDP():
             i = self.states.index(s)
             actions = self.possible_actions[s]
             maxi = [sum([V[j]*self.transition[a][i][j] for j in range(len(self.states))]) for a in actions]
-            arg = np.argmax([self.reward[i] + gamma * maxi[a] for a in range(len(actions))])
+            if sens == "max":
+                arg = np.argmax([self.reward[i] + gamma * maxi[a] for a in range(len(actions))])
+            elif sens == "min":
+                arg = np.argmin([self.reward[i] + gamma * maxi[a] for a in range(len(actions))])
             sigma[i] = actions[np.argmax([self.reward[i] + gamma * maxi[a] for a in range(len(actions))])]
 
         return V, sigma
