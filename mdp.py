@@ -522,7 +522,7 @@ class MDP():
 
     def SMC4MDP(self, state, theta, h, eps, N, L, p, eta):
         T = np.log2(eta)/np.log2(1 - p)
-        for _ in range(T):
+        for _ in range(int(T)):
             sigma = np.zeros((len(self.states), len(self.actions)))
             for i in range(len(self.states)):
                 for action in self.possible_actions[self.states[i]]:
@@ -576,6 +576,7 @@ class MDP():
                     loop = loop and True
             
             if loop:
+                res.append((choice, self.possible_actions[choice][0]))
                 return res
             
             state = choice[0]
@@ -667,6 +668,9 @@ def sigma_improve(self, sigma, h, eps, Q):
         for j in range(len(self.actions)):
             res[i][j] = h * sigma[i][j] + (1 - h) * p[j]
     return res
+
+
+
 class gramPrintListener(gramListener):
 
     def __init__(self):
@@ -827,7 +831,7 @@ def open(mdp_file):
     return printer.getMDP            
     
 def main():
-    mdp = open("ex3.mdp")
+    mdp = open("simu-mdp.mdp")
     #print(mdp.transition)
     # mdp.print()
 
@@ -849,9 +853,12 @@ def main():
     #print(proba)
     #Hyps = [mdp.SPRT(f"T{i}", 5, 0.01, 0.01, 0.1, 0.01, 30_000) for i in range(1,7)]
     #print(Hyps)
-    reward, opponent = mdp.iter_values(0.5, 1)
-    Q = mdp.Q_Learning(10000, 0.5)
-    print(Q)
+    # reward, opponent = mdp.iter_values(0.5, 1)
+    # Q = mdp.Q_Learning(10000, 0.5)
+    # print(Q)
+
+    res = mdp.SMC4MDP('W', theta=0.1, h=0.5, eps=0.01, N=2000, L=30, p=0.5, eta=0.1)
+
     #print(mdp.modelcheck("F", 10))
     input("Press Enter to end program")
 
