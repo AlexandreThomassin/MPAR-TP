@@ -673,19 +673,18 @@ class gramPrintListener(gramListener):
     def getMDP(self):
         return self.mdp
 
-            
-
-def main():
-    lexer = gramLexer(FileStream("fichier2-mc.mdp"))
+def open(mdp_file):
+    lexer = gramLexer(FileStream(mdp_file))
     stream = CommonTokenStream(lexer)
     parser = gramParser(stream)
     tree = parser.program()
     printer = gramPrintListener()
     walker = ParseTreeWalker()
     walker.walk(printer, tree)
-    
+    return printer.getMDP            
 
-    mdp = printer.getMDP
+def main():
+    mdp = open("ex3.mdp")
     #print(mdp.transition)
     # mdp.print()
 
