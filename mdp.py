@@ -519,7 +519,32 @@ class MDP():
         return (min_proba,max_proba)
 
 
-        
+    def SMC4MDP(self, state, theta, h, eps, N, L, p, eta):
+        T = np.log2(eta)/np.log2(1 - p)
+        for _ in range(T):
+            sigma = np.zeros((len(self.states), len(self.actions)))
+            for i in range(len(self.states)):
+                for action in self.possible_actions[self.states[i]]:
+                    j = self.actions.index(action)
+                    sigma[i][j] = 1/len(self.possible_actions[self.states[i]])
+                    sigma = self.optimise_sigma(sigma, h, eps, N, L)
+                    adversaire = self.determinise(sigma)
+                    if not self.hypothesisTesting(adversaire, state, theta):
+                        return False
+        return True                    
+    
+    def optimise_sigma(self, sigma, h, eps, N, L):
+        for _ in range(L):
+            Q = self.sigma_evaluate(sigma, N)
+            sigma = self.sigma_improve(sigma, h, eps, Q)
+        return sigma
+    
+    def determinise(self, sigma):
+        for i in range(len(self.states)):
+            line = np.zeros(len(self.actions))
+            line[np.argmax([sigma[i][j]] for j in range(len(self.actions)))] = 1.0
+            sigma[i] = line.copy()
+        return sigma
 class gramPrintListener(gramListener):
 
     def __init__(self):
