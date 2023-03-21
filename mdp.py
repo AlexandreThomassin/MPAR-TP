@@ -635,9 +635,9 @@ class MDP():
             else:
                 logRm += np.log(1 - gamma1) - np.log(1 - gamma0)
             if logRm >= logA:
-                return f"On valide l'hypothèse P(♦{state}) <= {theta} - {eps}"
+                return False
             if logRm <= logB:
-                return f"On valide l'hypothèse P(♦{state}) >= {theta} + {eps}"
+                return True
         return False
 
     def sigma_improve(self, sigma, h, eps, Q):
@@ -842,8 +842,8 @@ def main():
     # Q = mdp.Q_Learning(10000, 0.5)
     # print(Q)
 
-    res = mdp.SMC4MDP('W', h=0.5, eps=0.01, N=2000, L=30, p=0.5, eta=0.1, SPRT_max_step=5, SPRT_alpha=0.01, SPRT_beta=0.01, SPRT_eps=0.01, SPRT_N=30_000, SPRT_theta=0.1)
-
+    res = mdp.SMC4MDP('W', h=0.5, eps=0.01, N=2000, L=30, p=0.5, eta=0.1, SPRT_max_step=5, SPRT_alpha=0.01, SPRT_beta=0.01, SPRT_eps=0.01, SPRT_N=30_000, SPRT_theta=0.9)
+    print(res)
     #print(mdp.modelcheck("F", 10))
     input("Press Enter to end program")
 
