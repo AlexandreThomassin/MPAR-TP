@@ -520,7 +520,7 @@ class MDP():
 
     ### Reinforcement Learning
 
-    def SMC4MDP(self, state, theta, h, eps, N, L, p, eta):
+    def SMC4MDP(self, state, h, eps, N, L, p, eta, SPRT_max_step, SPRT_alpha, SPRT_beta, SPRT_theta, SPRT_eps, SPRT_N):
         T = np.log2(eta)/np.log2(1 - p)
         for _ in range(int(T)):
             sigma = np.zeros((len(self.states), len(self.actions)))
@@ -530,7 +530,7 @@ class MDP():
                     sigma[i][j] = 1/len(self.possible_actions[self.states[i]])
                     sigma = self.optimise_sigma(sigma, h, eps, N, L)
                     adversaire = self.determinise(sigma)
-                    if not self.hypothesisTesting(adversaire, state, theta):
+                    if not self.hypothesisTesting(adversaire, state, SPRT_max_step, SPRT_alpha, SPRT_beta, SPRT_theta, SPRT_eps, SPRT_N):
                         return False
         return True                    
     
@@ -604,57 +604,23 @@ class MDP():
 
         return Q
     
-    def hypothesisTesting(self, adversaire, final_state, n, theta):
-        for state in self.states:
-            if not self.possible_actions[state] == [None]:
-                print("WARNING: You are trying to use the modelcheckMC with a MDP, changing to modelcheckMDP")
-                return self.modelcheckMDP(final_state, n)
-        if type(final_state) is list:
-            S1 = final_state
-        else:
-            S1 = [final_state]
-
-        A = np.array(self.transition[None].copy())
-        A = np.zeros(A.shape)
-        for i in range(len(self.states)):
-            A[i] = self.transition(adversaire[i])
-        A = np.array(A)
-        S0 = [self.states[s] for s in range(len(self.states)) if self.states[s] not in S1 and A[s][s] >= 1.]
-
-        for state in self.states:
-            index = self.states.index(state)
-            targets = [self.states[i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
-            weights = [self.transition[None][index][i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
-
-            if len(targets) == 1 and weights[0] == 1:
-                if targets[0] in S1 and state not in S1:
-                    S1.append(state)
-                if targets[0] in S0 and state not in S0:
-                    S0.append(state)
-
-        
-        print("S1 :" + str(S1))
-        print("S0 :" + str(S0))
-
-        index_S1 = [self.states.index(s) for s in S1]
- 
-        index_S0 = [self.states.index(s) for s in S0]
- 
-        A = np.delete(A, index_S0 + index_S1, axis = 0)
-        b = np.take(A, index_S1, axis = 1)
-        b = np.sum(b, axis = 1)
-        b = b.reshape((A.shape[0], 1))
-        A = np.delete(A, index_S0 + index_S1, axis = 1)
-        M = np.eye(A.shape[0]) - A
-
-        # Compute gamma_n
-        if n is None:
-            y = np.linalg.solve(M,b)
-        else:
-            y = np.zeros((A.shape[0],1))
-            for _ in range(n):
-                y = np.dot(A, y) + b
-        return np.all(y > theta)
+    def hypothesisTesting(self, adversaire, state, max_step, alpha, beta, theta, eps, N)):
+        gamma1 = theta - eps
+        gamma0 = theta + eps
+        logA = np.log((1 - beta)/alpha)
+        logB = np.log(beta/(1 - alpha))
+        logRm = 0
+        for _ in range(N):
+            sim = self.simu_sigma(adversaire, state, max_step)[-1][0]
+            if sim == state:
+                logRm += np.log(gamma1) - np.log(gamma0)
+            else:
+                logRm += np.log(1 - gamma1) - np.log(1 - gamma0)
+            if logRm >= logA:
+                return f"On valide l'hypothèse P(♦{state}) <= {theta} - {eps}"
+            if logRm <= logB:
+                return f"On valide l'hypothèse P(♦{state}) >= {theta} + {eps}"
+        return False
 
 def sigma_improve(self, sigma, h, eps, Q):
     res = sigma
