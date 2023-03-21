@@ -655,7 +655,18 @@ class MDP():
                 y = np.dot(A, y) + b
         return np.all(y > theta)
 
-def sigma_improve(self, h, eps)        
+def sigma_improve(self, sigma, h, eps, Q):
+    res = sigma
+    for i in range(len(self.states)):
+        astar = np.argmax(Q[i][a] for a in range(len(self.actions)))
+        somme = np.sum([Q[i][a] for a in range(len(self.actions))])
+        p = np.zeros(len(self.actions))
+        for j in range(len(self.actions)):
+            p[j] = eps * Q[i][j] / somme
+        p[astar] += 1 - eps
+        for j in range(len(self.actions)):
+            res[i][j] = h * sigma[i][j] + (1 - h) * p[j]
+    return res
 class gramPrintListener(gramListener):
 
     def __init__(self):
