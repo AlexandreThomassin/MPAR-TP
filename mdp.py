@@ -12,6 +12,7 @@ import io
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import time
+from tqdm import tqdm
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -530,19 +531,14 @@ class MDP():
                     j = self.actions.index(action)
                     sigma[i][j] = 1/len(self.possible_actions[self.states[i]])
 
-
-            for i in range(len(self.states)):
-                for action in self.possible_actions[self.states[i]]:
-                    j = self.actions.index(action)
-                    # sigma[i][j] = 1/len(self.possible_actions[self.states[i]])
-                    sigma = self.optimise_sigma(state, sigma, h, eps, N, L)
-                    adversaire = self.determinise(sigma)
-                    if not self.hypothesisTesting(adversaire, state, SPRT_max_step, SPRT_alpha, SPRT_beta, SPRT_theta, SPRT_eps, SPRT_N):
-                        return False
+            sigma = self.optimise_sigma(state, sigma, h, eps, N, L)
+            adversaire = self.determinise(sigma)
+            if not self.hypothesisTesting(adversaire, state, SPRT_max_step, SPRT_alpha, SPRT_beta, SPRT_theta, SPRT_eps, SPRT_N):
+                return False
         return True                    
     
     def optimise_sigma(self,state, sigma, h, eps, N, L):
-        for _ in range(L):
+        for _ in tqdm(range(L)):
             Q = self.sigma_evaluate(state, sigma, N)
             sigma = self.sigma_improve(sigma, h, eps, Q)
         return sigma
@@ -570,9 +566,12 @@ class MDP():
             # print(state)
             # print(actions)
             # print(weights)
-
-            action = random.choices(actions, weights)[0]
             
+            try:
+                action = random.choices(actions, weights)[0]
+            except:
+                print(weights)        
+                raise ValueError
             res.append((state,action))
 
             # Choix du prochain sommet
@@ -580,7 +579,11 @@ class MDP():
             weights = [self.transition[action][index_state][i] for i in range(len(self.states)) if self.transition[action][index_state][i] != 0]
 
 
-            choice = random.choices(targets, weights = weights)[0]
+            try:
+                choice = random.choices(targets, weights = weights)[0]
+            except:
+                print(weights)
+                raise ValueError
 
             # Check if the choice state loop on himself with every actions
             index_choice = self.states.index(choice)
@@ -605,11 +608,12 @@ class MDP():
         for i in range(N):
             state = self.states[0]
             res_simu = self.simu_sigma(sigma, state)
+            final_state_simu = res_simu[-1][0]
             for (state, action) in res_simu:
                 index_state = self.states.index(state)
                 index_action = self.actions.index(action)
 
-                if state == final_state:
+                if final_state_simu == final_state:
                     R_plus[index_state][index_action] += 1
                 else:
                     R_moins[index_state][index_action] += 1
@@ -642,8 +646,9 @@ class MDP():
             astar = np.argmax(Q[i][a] for a in range(len(self.actions)))
             somme = np.sum([Q[i][a] for a in range(len(self.actions))])
             p = np.zeros(len(self.actions))
-            for j in range(len(self.actions)):
-                p[j] = eps * Q[i][j] / somme
+            if somme > 0:
+                for j in range(len(self.actions)):
+                    p[j] = eps * Q[i][j] / somme
             p[astar] += 1 - eps
             for j in range(len(self.actions)):
                 res[i][j] = h * sigma[i][j] + (1 - h) * p[j]
