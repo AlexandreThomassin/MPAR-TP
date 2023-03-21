@@ -524,19 +524,26 @@ class MDP():
         T = np.log2(eta)/np.log2(1 - p)
         for _ in range(int(T)):
             sigma = np.zeros((len(self.states), len(self.actions)))
+
+            for i in range(len(self.states)):
+                for action in self.possible_actions[state]:
+                    j = self.actions.index(action)
+                    sigma[i][j] = 1/len(self.possible_actions[self.states[i]])
+
+
             for i in range(len(self.states)):
                 for action in self.possible_actions[self.states[i]]:
                     j = self.actions.index(action)
-                    sigma[i][j] = 1/len(self.possible_actions[self.states[i]])
-                    sigma = self.optimise_sigma(sigma, h, eps, N, L)
+                    # sigma[i][j] = 1/len(self.possible_actions[self.states[i]])
+                    sigma = self.optimise_sigma(state, sigma, h, eps, N, L)
                     adversaire = self.determinise(sigma)
                     if not self.hypothesisTesting(adversaire, state, SPRT_max_step, SPRT_alpha, SPRT_beta, SPRT_theta, SPRT_eps, SPRT_N):
                         return False
         return True                    
     
-    def optimise_sigma(self, sigma, h, eps, N, L):
+    def optimise_sigma(self,state, sigma, h, eps, N, L):
         for _ in range(L):
-            Q = self.sigma_evaluate(sigma, N)
+            Q = self.sigma_evaluate(state, sigma, N)
             sigma = self.sigma_improve(sigma, h, eps, Q)
         return sigma
     
@@ -549,16 +556,22 @@ class MDP():
 
     def simu_sigma(self, sigma, state, max_step = 200):
 
+
         res = []
         for _ in range(max_step):
 
+            # print("sigma : "  + str(sigma)) 
             index_state = self.states.index(state)
 
             # Choix de l'actions selon sigma
             actions = self.actions
             weights = sigma[index_state]
 
-            action = random.choices(actions, weights)
+            # print(state)
+            # print(actions)
+            # print(weights)
+
+            action = random.choices(actions, weights)[0]
             
             res.append((state,action))
 
@@ -566,12 +579,13 @@ class MDP():
             targets = [self.states[i] for i in range(len(self.states)) if self.transition[action][index_state][i] != 0]
             weights = [self.transition[action][index_state][i] for i in range(len(self.states)) if self.transition[action][index_state][i] != 0]
 
-            choice = random.choices(targets, weights = weights)
+
+            choice = random.choices(targets, weights = weights)[0]
 
             # Check if the choice state loop on himself with every actions
             index_choice = self.states.index(choice)
             loop = False
-            for act in self.possible_actions[index_choice]:
+            for act in self.possible_actions[choice]:
                 if self.transition[act][index_choice][index_choice] == 1:
                     loop = loop and True
             
@@ -579,7 +593,7 @@ class MDP():
                 res.append((choice, self.possible_actions[choice][0]))
                 return res
             
-            state = choice[0]
+            state = choice
 
         return res
 
@@ -604,7 +618,7 @@ class MDP():
 
         return Q
     
-    def hypothesisTesting(self, adversaire, state, max_step, alpha, beta, theta, eps, N)):
+    def hypothesisTesting(self, adversaire, state, max_step, alpha, beta, theta, eps, N):
         gamma1 = theta - eps
         gamma0 = theta + eps
         logA = np.log((1 - beta)/alpha)
@@ -622,18 +636,18 @@ class MDP():
                 return f"On valide l'hypothèse P(♦{state}) >= {theta} + {eps}"
         return False
 
-def sigma_improve(self, sigma, h, eps, Q):
-    res = sigma
-    for i in range(len(self.states)):
-        astar = np.argmax(Q[i][a] for a in range(len(self.actions)))
-        somme = np.sum([Q[i][a] for a in range(len(self.actions))])
-        p = np.zeros(len(self.actions))
-        for j in range(len(self.actions)):
-            p[j] = eps * Q[i][j] / somme
-        p[astar] += 1 - eps
-        for j in range(len(self.actions)):
-            res[i][j] = h * sigma[i][j] + (1 - h) * p[j]
-    return res
+    def sigma_improve(self, sigma, h, eps, Q):
+        res = sigma
+        for i in range(len(self.states)):
+            astar = np.argmax(Q[i][a] for a in range(len(self.actions)))
+            somme = np.sum([Q[i][a] for a in range(len(self.actions))])
+            p = np.zeros(len(self.actions))
+            for j in range(len(self.actions)):
+                p[j] = eps * Q[i][j] / somme
+            p[astar] += 1 - eps
+            for j in range(len(self.actions)):
+                res[i][j] = h * sigma[i][j] + (1 - h) * p[j]
+        return res
 
 
 
@@ -823,7 +837,7 @@ def main():
     # Q = mdp.Q_Learning(10000, 0.5)
     # print(Q)
 
-    res = mdp.SMC4MDP('W', theta=0.1, h=0.5, eps=0.01, N=2000, L=30, p=0.5, eta=0.1)
+    res = mdp.SMC4MDP('W', h=0.5, eps=0.01, N=2000, L=30, p=0.5, eta=0.1, SPRT_max_step=1000, SPRT_alpha=0.5, SPRT_beta=0.5, SPRT_eps=0.1, SPRT_N=1000, SPRT_theta=0.1)
 
     #print(mdp.modelcheck("F", 10))
     input("Press Enter to end program")
