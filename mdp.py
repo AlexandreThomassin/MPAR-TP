@@ -101,7 +101,10 @@ class MDP():
 
     def print(self):
         self.graph = pydot.Dot('Markov Chain Representation', graph_type='graph', bgcolor='white')
-        states_graph = [pydot.Node(state, label = state) for state in self.states]
+        try:
+            states_graph = [pydot.Node(self.states[i], label = f"{self.states[i]} - [{self.reward[i]}]") for i in range(len(self.states))]
+        except:
+            states_graph = [pydot.Node(state, label = state) for state in self.states]
         for state in states_graph: self.graph.add_node(state)
         for source in self.states:
             index = self.states.index(source)
@@ -455,8 +458,8 @@ class MDP():
             if loop == True and state not in S1:
                 S0.append(state)
 
-        print("S1 :" + str(S1))
-        print("S0 :" + str(S0))
+        # print("S1 :" + str(S1))
+        # print("S0 :" + str(S0))
 
         index_S0 = [self.states.index(S) for S in S0]
         
@@ -494,8 +497,8 @@ class MDP():
             i+=1
             j+=1
         
-        print("A :" + str(A))
-        print("b :" + str(b))
+        # print("A :" + str(A))
+        # print("b :" + str(b))
         c = np.ones(A.shape[1])
 
 
@@ -505,7 +508,7 @@ class MDP():
         u = np.ones(A.shape[1])
         bounds = list(zip(l,u))
 
-        print(-c)
+        # print(-c)
 
         # Min probability
         min_proba = sp.optimize.linprog(-c, A, b).x
