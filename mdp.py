@@ -842,7 +842,7 @@ def main():
     # Q = mdp.Q_Learning(10000, 0.5)
     # print(Q)
 
-    res = mdp.SMC4MDP('W', h=0.5, eps=0.01, N=2000, L=30, p=0.5, eta=0.1, SPRT_max_step=1000, SPRT_alpha=0.5, SPRT_beta=0.5, SPRT_eps=0.1, SPRT_N=1000, SPRT_theta=0.1)
+    res = mdp.SMC4MDP('W', h=0.5, eps=0.01, N=2000, L=30, p=0.5, eta=0.1, SPRT_max_step=5, SPRT_alpha=0.01, SPRT_beta=0.01, SPRT_eps=0.01, SPRT_N=30_000, SPRT_theta=0.1)
 
     #print(mdp.modelcheck("F", 10))
     input("Press Enter to end program")
