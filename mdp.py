@@ -416,27 +416,20 @@ class MDP():
                 if targets[0] in S0 and state not in S0:
                     S0.append(state)
 
-
+        
+        print("S1 :" + str(S1))
+        print("S0 :" + str(S0))
 
         index_S1 = [self.states.index(s) for s in S1]
-        print(index_S1)
-
-        
+ 
         index_S0 = [self.states.index(s) for s in S0]
-        print(index_S0)
-
-
-
-
-        
+ 
         A = np.delete(A, index_S0 + index_S1, axis = 0)
         b = np.take(A, index_S1, axis = 1)
         b = np.sum(b, axis = 1)
         b = b.reshape((A.shape[0], 1))
         A = np.delete(A, index_S0 + index_S1, axis = 1)
         M = np.eye(A.shape[0]) - A
-        #print(A)
-        #print(b)
 
         # Compute gamma_n
         if n is None:
@@ -682,9 +675,9 @@ def open(mdp_file):
     walker = ParseTreeWalker()
     walker.walk(printer, tree)
     return printer.getMDP            
-
+    
 def main():
-    mdp = open("ex3.mdp")
+    mdp = open("fichier2-mc.mdp")
     #print(mdp.transition)
     # mdp.print()
 
