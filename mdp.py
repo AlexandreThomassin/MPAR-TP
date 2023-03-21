@@ -546,6 +546,7 @@ class MDP():
             line[np.argmax([sigma[i][j]] for j in range(len(self.actions)))] = 1.0
             sigma[i] = line.copy()
         return sigma
+
     def simu_sigma(self, sigma, state, max_step = 200):
 
         res = []
@@ -601,7 +602,60 @@ class MDP():
                 Q[index_state][index_action] = R_plus[index_state][index_action] / (R_plus[index_state][index_action] + R_moins[index_state][index_action])
 
         return Q
+    
+    def hypothesisTesting(self, adversaire, final_state, n, theta):
+        for state in self.states:
+            if not self.possible_actions[state] == [None]:
+                print("WARNING: You are trying to use the modelcheckMC with a MDP, changing to modelcheckMDP")
+                return self.modelcheckMDP(final_state, n)
+        if type(final_state) is list:
+            S1 = final_state
+        else:
+            S1 = [final_state]
+
+        A = np.array(self.transition[None].copy())
+        A = np.zeros(A.shape)
+        for i in range(len(self.states)):
+            A[i] = self.transition(adversaire[i])
+        A = np.array(A)
+        S0 = [self.states[s] for s in range(len(self.states)) if self.states[s] not in S1 and A[s][s] >= 1.]
+
+        for state in self.states:
+            index = self.states.index(state)
+            targets = [self.states[i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
+            weights = [self.transition[None][index][i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
+
+            if len(targets) == 1 and weights[0] == 1:
+                if targets[0] in S1 and state not in S1:
+                    S1.append(state)
+                if targets[0] in S0 and state not in S0:
+                    S0.append(state)
+
         
+        print("S1 :" + str(S1))
+        print("S0 :" + str(S0))
+
+        index_S1 = [self.states.index(s) for s in S1]
+ 
+        index_S0 = [self.states.index(s) for s in S0]
+ 
+        A = np.delete(A, index_S0 + index_S1, axis = 0)
+        b = np.take(A, index_S1, axis = 1)
+        b = np.sum(b, axis = 1)
+        b = b.reshape((A.shape[0], 1))
+        A = np.delete(A, index_S0 + index_S1, axis = 1)
+        M = np.eye(A.shape[0]) - A
+
+        # Compute gamma_n
+        if n is None:
+            y = np.linalg.solve(M,b)
+        else:
+            y = np.zeros((A.shape[0],1))
+            for _ in range(n):
+                y = np.dot(A, y) + b
+        return np.all(y > theta)
+
+def sigma_improve(self, h, eps)        
 class gramPrintListener(gramListener):
 
     def __init__(self):
