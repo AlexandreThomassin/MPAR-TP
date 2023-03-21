@@ -46,7 +46,7 @@ class MDP():
         print("----------------------------------")
         print("States : " + str(self.states))
         print("Actions : " + str(self.actions))
-        print(self.accessible)
+        
         if sorted(self.accessible) == sorted(self.states):
             print("Tous les états sont accessibles")
         else:
@@ -518,7 +518,63 @@ class MDP():
 
         return (min_proba,max_proba)
 
+    ### Reinforcement Learning
 
+    def simu_sigma(self, sigma, state, max_step = 200):
+
+        res = []
+        for _ in range(max_step):
+
+            index_state = self.states.index(state)
+
+            # Choix de l'actions selon sigma
+            actions = self.actions
+            weights = sigma[index_state]
+
+            action = random.choices(actions, weights)
+            
+            res.append((state,action))
+
+            # Choix du prochain sommet
+            targets = [self.states[i] for i in range(len(self.states)) if self.transition[action][index_state][i] != 0]
+            weights = [self.transition[action][index_state][i] for i in range(len(self.states)) if self.transition[action][index_state][i] != 0]
+
+            choice = random.choices(targets, weights = weights)
+
+            # Check if the choice state loop on himself with every actions
+            index_choice = self.states.index(choice)
+            loop = False
+            for act in self.possible_actions[index_choice]:
+                if self.transition[act][index_choice][index_choice] == 1:
+                    loop = loop and True
+            
+            if loop:
+                return res
+            
+            state = choice[0]
+
+        return res
+
+    def scheduler_evaluation(self, final_state, sigma, N = 1000):
+        R_plus = np.zeros((len(self.states), len(self.actions)))
+        R_moins = np.zeros((len(self.states), len(self.actions)))
+        Q = np.zeros((len(self.states), len(self.actions)))
+
+        for i in range(N):
+            state = self.states[0]
+            res_simu = self.simu_sigma(sigma, state)
+            for (state, action) in res_simu:
+                index_state = self.states.index(state)
+                index_action = self.actions.index(action)
+
+                if state == final_state:
+                    R_plus[index_state][index_action] += 1
+                else:
+                    R_moins[index_state][index_action] += 1
+
+                Q[index_state][index_action] = R_plus[index_state][index_action] / (R_plus[index_state][index_action] + R_moins[index_state][index_action])
+
+        return Q
         
 class gramPrintListener(gramListener):
 
@@ -680,21 +736,21 @@ def open(mdp_file):
     return printer.getMDP            
     
 def main():
-    mdp = open("fichier2-mc.mdp")
+    mdp = open("ex3.mdp")
     #print(mdp.transition)
     # mdp.print()
 
     print(mdp.possible_actions)
     print(mdp.actions)
 
-    SMC = mdp.modelcheckMC("F", n = 5)
-    print("Model Checking Statitique : \n" + str(SMC))
+    # SMC = mdp.modelcheckMC("F", n = 5)
+    # print("Model Checking Statitique : \n" + str(SMC))
 
-    MonteCarlo = mdp.MonteCarlo("F", max_step=5, eps=0.01, sigma=0.05)
-    print("Résultat avec la méthode de Monte-Carlo : " + str(MonteCarlo))
+    # MonteCarlo = mdp.MonteCarlo("F", max_step=5, eps=0.01, sigma=0.05)
+    # print("Résultat avec la méthode de Monte-Carlo : " + str(MonteCarlo))
 
-    SPRT = mdp.SPRT("F", max_step=5, alpha=0.01, beta=0.01, theta=0.67, eps=0.01, N=10000)
-    print(SPRT)
+    # SPRT = mdp.SPRT("F", max_step=5, alpha=0.01, beta=0.01, theta=0.67, eps=0.01, N=10000)
+    # print(SPRT)
 
 
     # mdp.simulate(max_steps=50)
@@ -702,9 +758,9 @@ def main():
     #print(proba)
     #Hyps = [mdp.SPRT(f"T{i}", 5, 0.01, 0.01, 0.1, 0.01, 30_000) for i in range(1,7)]
     #print(Hyps)
-    # reward, opponent = mdp.iter_values(0.5, 1)
-    # Q = mdp.Q_Learning(10000, 0.5)
-    # print(Q)
+    reward, opponent = mdp.iter_values(0.5, 1)
+    Q = mdp.Q_Learning(10000, 0.5)
+    print(Q)
     #print(mdp.modelcheck("F", 10))
     input("Press Enter to end program")
 
