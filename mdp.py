@@ -530,9 +530,9 @@ class MDP():
                 for action in self.possible_actions[state]:
                     j = self.actions.index(action)
                     sigma[i][j] = 1/len(self.possible_actions[self.states[i]])
-
             sigma = self.optimise_sigma(state, sigma, h, eps, N, L)
             adversaire = self.determinise(sigma)
+            print(adversaire)
             if not self.hypothesisTesting(adversaire, state, SPRT_max_step, SPRT_alpha, SPRT_beta, SPRT_theta, SPRT_eps, SPRT_N):
                 return False
             
@@ -542,18 +542,17 @@ class MDP():
         for _ in tqdm(range(L)):
             Q = self.sigma_evaluate(state, sigma, N)
             sigma = self.sigma_improve(sigma, h, eps, Q)
+            #print("Q = \n", Q, "\n sigma =", sigma, "\nScheduler = \n", self.determinise(sigma.copy()))
         return sigma
     
     def determinise(self, sigma):
         for i in range(len(self.states)):
             line = np.zeros(len(self.actions))
-            line[np.argmax([sigma[i][j]] for j in range(len(self.actions)))] = 1.0
+            line[np.argmax([sigma[i][j] for j in range(len(self.actions))])] = 1.0
             sigma[i] = line.copy()
         return sigma
 
     def simu_sigma(self, sigma, state, max_step = 200):
-
-
         res = []
         for _ in range(max_step):
 
@@ -588,17 +587,18 @@ class MDP():
 
             # Check if the choice state loop on himself with every actions
             index_choice = self.states.index(choice)
-            loop = False
+            loop = True    
             for act in self.possible_actions[choice]:
                 if self.transition[act][index_choice][index_choice] == 1:
                     loop = loop and True
+                else:
+                    loop = False
             
             if loop:
                 res.append((choice, self.possible_actions[choice][0]))
                 return res
-            
             state = choice
-
+            
         return res
 
     def sigma_evaluate(self, final_state, sigma, N = 1000):
@@ -624,7 +624,6 @@ class MDP():
                     R_moins[index_state][index_action] += 1
 
                 Q[index_state][index_action] = R_plus[index_state][index_action] / (R_plus[index_state][index_action] + R_moins[index_state][index_action])
-
         return Q
     
     def hypothesisTesting(self, adversaire, state, max_step, alpha, beta, theta, eps, N):
@@ -650,7 +649,7 @@ class MDP():
     def sigma_improve(self, sigma, h, eps, Q):
         res = sigma
         for i in range(len(self.states)):
-            astar = np.argmax(Q[i][a] for a in range(len(self.actions)))
+            astar = np.argmax([Q[i][a] for a in range(len(self.actions))])
             somme = np.sum([Q[i][a] for a in range(len(self.actions))])
             p = np.zeros(len(self.actions))
             if somme > 0:
