@@ -297,12 +297,17 @@ class MDP():
             else:
                 logRm += np.log(1 - gamma1) - np.log(1 - gamma0)
             if logRm >= logA:
-                return "H1"
+                return f"On valide l'hypothèse P(♦{state}) <= {theta} - {eps}"
             if logRm <= logB:
-                return "H0"
+                return f"On valide l'hypothèse P(♦{state}) >= {theta} + {eps}"
         return False
     
     def iter_values(self, gamma, epsilon, sens = "max"):
+
+        if not self.reward :
+            print("This MDP has no reward")
+            return (None,None)
+
         if sens not in ["max", "min"]:
             raise ValueError("sens is either max or min")
         V = np.zeros(len(self.states))
@@ -353,6 +358,13 @@ class MDP():
     
 
     def Q_Learning(self, T_tot, gamma):
+
+        for state in self.states:
+            if None in self.possible_actions[state]:
+                print("Cannot apply Q-Learning on Markov Chain")
+                return None
+
+
         Q = np.zeros((len(self.states), len(self.actions)))
         alpha = np.ones((len(self.states), len(self.actions)))
         #print(Q)
@@ -389,11 +401,33 @@ class MDP():
             S1 = final_state
         else:
             S1 = [final_state]
-        index_S1 = [self.states.index(s) for s in S1]
 
         A = np.array(self.transition[None].copy())
-        S0 = [self.states[s] for s in range(len(self.states)) if s not in index_S1 and A[s][s] >= 1.]
+        S0 = [self.states[s] for s in range(len(self.states)) if self.states[s] not in S1 and A[s][s] >= 1.]
+
+        for state in self.states:
+            index = self.states.index(state)
+            targets = [self.states[i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
+            weights = [self.transition[None][index][i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
+
+            if len(targets) == 1 and weights[0] == 1:
+                if targets[0] in S1 and state not in S1:
+                    S1.append(state)
+                if targets[0] in S0 and state not in S0:
+                    S0.append(state)
+
+
+
+        index_S1 = [self.states.index(s) for s in S1]
+        print(index_S1)
+
+        
         index_S0 = [self.states.index(s) for s in S0]
+        print(index_S0)
+
+
+
+
         
         A = np.delete(A, index_S0 + index_S1, axis = 0)
         b = np.take(A, index_S1, axis = 1)
@@ -642,7 +676,7 @@ class gramPrintListener(gramListener):
             
 
 def main():
-    lexer = gramLexer(FileStream("ex3.mdp"))
+    lexer = gramLexer(FileStream("fichier2-mc.mdp"))
     stream = CommonTokenStream(lexer)
     parser = gramParser(stream)
     tree = parser.program()
@@ -653,13 +687,27 @@ def main():
 
     mdp = printer.getMDP
     #print(mdp.transition)
-    #mdp.print()
+    # mdp.print()
+
+    print(mdp.possible_actions)
+    print(mdp.actions)
+
+    SMC = mdp.modelcheckMC("F", n = 5)
+    print("Model Checking Statitique : \n" + str(SMC))
+
+    MonteCarlo = mdp.MonteCarlo("F", max_step=5, eps=0.01, sigma=0.05)
+    print("Résultat avec la méthode de Monte-Carlo : " + str(MonteCarlo))
+
+    SPRT = mdp.SPRT("F", max_step=5, alpha=0.01, beta=0.01, theta=0.67, eps=0.01, N=10000)
+    print(SPRT)
+
+
     # mdp.simulate(max_steps=50)
     #proba = [mdp.MonteCarlo(f"T{i}", 5, 0.01, 0.01) for i in range(1,7)]
     #print(proba)
     #Hyps = [mdp.SPRT(f"T{i}", 5, 0.01, 0.01, 0.1, 0.01, 30_000) for i in range(1,7)]
     #print(Hyps)
-    print(mdp.iter_values(0.5, 1))
+    # reward, opponent = mdp.iter_values(0.5, 1)
     # Q = mdp.Q_Learning(10000, 0.5)
     # print(Q)
     #print(mdp.modelcheck("F", 10))
