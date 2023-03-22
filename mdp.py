@@ -532,14 +532,14 @@ class MDP():
                     sigma[i][j] = 1/len(self.possible_actions[self.states[i]])
             sigma = self.optimise_sigma(state, sigma, h, eps, N, L)
             adversaire = self.determinise(sigma)
-            print(adversaire)
+            #print(adversaire)
             if not self.hypothesisTesting(adversaire, state, SPRT_max_step, SPRT_alpha, SPRT_beta, SPRT_theta, SPRT_eps, SPRT_N):
                 return False
             
         return True                    
     
     def optimise_sigma(self,state, sigma, h, eps, N, L):
-        for _ in tqdm(range(L)):
+        for _ in (range(L)):
             Q = self.sigma_evaluate(state, sigma, N)
             # print(Q)
             sigma = self.sigma_improve(sigma, h, eps, Q)
@@ -638,7 +638,7 @@ class MDP():
         logA = np.log((1 - beta)/alpha)
         logB = np.log(beta/(1 - alpha))
         logRm = 0
-        print('t' + str(adversaire))
+        # print('t' + str(adversaire))
         for _ in range(N):
             sim = self.simu_sigma(adversaire, self.states[0], max_step)[-1][0]
             if sim == state:
@@ -858,7 +858,7 @@ def main():
     # Q = mdp.Q_Learning(10000, 0.5)
     # print(Q)
 
-    res = mdp.SMC4MDP('W', h=0.5, eps=0.01, N=2000, L=30, p=0.5, eta=0.1, SPRT_max_step=100, SPRT_alpha=0.01, SPRT_beta=0.01, SPRT_eps=0.01, SPRT_N=300_000, SPRT_theta=0.43)
+    res = mdp.SMC4MDP('W', h=0.5, eps=0.01, N=20000, L=30, p=0.5, eta=0.1, SPRT_max_step=100, SPRT_alpha=0.01, SPRT_beta=0.01, SPRT_eps=0.1, SPRT_N=30_000, SPRT_theta=0.12)
     print(res)
     #print(mdp.modelcheck("F", 10))
     input("Press Enter to end program")
