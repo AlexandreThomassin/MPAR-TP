@@ -541,6 +541,7 @@ class MDP():
     def optimise_sigma(self,state, sigma, h, eps, N, L):
         for _ in tqdm(range(L)):
             Q = self.sigma_evaluate(state, sigma, N)
+            # print(Q)
             sigma = self.sigma_improve(sigma, h, eps, Q)
             #print("Q = \n", Q, "\n sigma =", sigma, "\nScheduler = \n", self.determinise(sigma.copy()))
         return sigma
@@ -587,7 +588,7 @@ class MDP():
 
             # Check if the choice state loop on himself with every actions
             index_choice = self.states.index(choice)
-            loop = True    
+            loop = True
             for act in self.possible_actions[choice]:
                 if self.transition[act][index_choice][index_choice] == 1:
                     loop = loop and True
@@ -614,6 +615,8 @@ class MDP():
             state = self.states[0]
             res_simu = self.simu_sigma(sigma, state)
             final_state_simu = res_simu[-1][0]
+            # print(res_simu)
+            # print('Final state : ' + str(final_state_simu))
             for (state, action) in res_simu:
                 index_state = self.states.index(state)
                 index_action = self.actions.index(action)
@@ -624,6 +627,9 @@ class MDP():
                     R_moins[index_state][index_action] += 1
 
                 Q[index_state][index_action] = R_plus[index_state][index_action] / (R_plus[index_state][index_action] + R_moins[index_state][index_action])
+        
+        # print('R plus : ' + str(R_plus))
+        # print('R moins : ' + str(R_moins))
         return Q
     
     def hypothesisTesting(self, adversaire, state, max_step, alpha, beta, theta, eps, N):
@@ -632,18 +638,22 @@ class MDP():
         logA = np.log((1 - beta)/alpha)
         logB = np.log(beta/(1 - alpha))
         logRm = 0
+        print('t' + str(adversaire))
         for _ in range(N):
-            sim = self.simu_sigma(adversaire, state, max_step)[-1][0]
+            sim = self.simu_sigma(adversaire, self.states[0], max_step)[-1][0]
             if sim == state:
                 logRm += np.log(gamma1) - np.log(gamma0)
             else:
                 logRm += np.log(1 - gamma1) - np.log(1 - gamma0)
+
             if logRm >= logA:
                 # return f"On valide l'hypothèse P(♦{state}) <= {theta} - {eps}"
-                return False
+                # print('False')
+                return True
             if logRm <= logB:
                 # return f"On valide l'hypothèse P(♦{state}) >= {theta} + {eps}"
-                return True
+                # print('True')
+                return False
         return False
 
     def sigma_improve(self, sigma, h, eps, Q):
@@ -651,6 +661,7 @@ class MDP():
         for i in range(len(self.states)):
             astar = np.argmax([Q[i][a] for a in range(len(self.actions))])
             somme = np.sum([Q[i][a] for a in range(len(self.actions))])
+
             p = np.zeros(len(self.actions))
             if somme > 0:
                 for j in range(len(self.actions)):
@@ -659,7 +670,6 @@ class MDP():
             for j in range(len(self.actions)):
                 res[i][j] = h * sigma[i][j] + (1 - h) * p[j]
         return res
-
 
 
 class gramPrintListener(gramListener):
@@ -824,7 +834,7 @@ def open(mdp_file):
 def main():
     mdp = open("simu-mdp.mdp")
     #print(mdp.transition)
-    # mdp.print()
+    #mdp.print()
 
     print(mdp.possible_actions)
     print(mdp.actions)
@@ -848,7 +858,7 @@ def main():
     # Q = mdp.Q_Learning(10000, 0.5)
     # print(Q)
 
-    res = mdp.SMC4MDP('W', h=0.5, eps=0.01, N=2000, L=30, p=0.5, eta=0.1, SPRT_max_step=100, SPRT_alpha=0.01, SPRT_beta=0.01, SPRT_eps=0.1, SPRT_N=30_000, SPRT_theta=0.95)
+    res = mdp.SMC4MDP('W', h=0.5, eps=0.01, N=2000, L=30, p=0.5, eta=0.1, SPRT_max_step=100, SPRT_alpha=0.01, SPRT_beta=0.01, SPRT_eps=0.01, SPRT_N=300_000, SPRT_theta=0.43)
     print(res)
     #print(mdp.modelcheck("F", 10))
     input("Press Enter to end program")
