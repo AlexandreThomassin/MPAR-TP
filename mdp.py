@@ -59,9 +59,11 @@ class MDP():
 
         issue = False
 
-        # Test if state has transition with actions and without actions
+        
         for state in self.states:
             index = self.states.index(state)
+
+            # Test if a state has at least one transition, if not we add a loop on itself
             if state not in self.possible_actions.keys():
                     issue = True
                     print(f"WARNING : The state {state} has no transitions to other state.")
@@ -72,12 +74,14 @@ class MDP():
                     self.transition[None][index][index] = 1
                     self.possible_actions[state] = [None]
 
+            # Test if state has transition with actions and without actions
             if None in self.possible_actions[state] and len(self.possible_actions[state]) != 1:
                         issue = True
                         print(f"WARNING : The state {state} has transition both with actions and without actions !")
                         print("When simulate it will choose the path without actions.\n")
                     
 
+        # Resize transition matrix in case it is not of the right size
         for act in self.transition.keys():
             if len(self.transition[act]) != len(self.states):
                 diff = abs(len(self.transition[act]) != len(self.states))
@@ -87,6 +91,7 @@ class MDP():
         #     diff = abs(len(self.transition[None]) != len(self.states))
         #     self.transition[None] = np.pad(self.transition[None], ((0,diff),(0,diff)))
         
+        # Test if there are non-accessible states
         if set(self.accessible) != set(self.states):
             issue = True
             print(f"WARNING : Les états suivants ne sont pas accessible : {list(set(self.states) - set(self.accessible))}\n")
@@ -94,7 +99,7 @@ class MDP():
         if not issue:
             print("Il n'y a pas de problèmes")
 
-
+        # Get probability between 0 and 1
         for act in self.transition.keys():
             for i in range(len(self.states)):
                 if np.sum(self.transition[act][i]) != 0:
@@ -184,11 +189,14 @@ class MDP():
 
 
     def simulate(self, max_steps = 100):
+
+        # If there are no states, end the simulation right away
         if len(self.states)==0:
             print("Il n'y pas d\'états, simulation impossible")
             return
 
 
+        # Get the parameters of the simulation
         auto = input("Simulation automatique ? Y/N \n")
         animate = input("Animation graphique? Y/N \n")
         print("\nStarting Simulation\n--------------------")
@@ -206,20 +214,28 @@ class MDP():
             targets = []
             weights = []
 
+            # Deterministic part
             if None in self.possible_actions[state]:
+
+                # Get possible targets states and respectives weights
                 targets = [self.states[i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
                 weights = [self.transition[None][index][i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
 
+                # Ending the simulation if we loop
                 if len(targets) == 1 and targets[0] == state:
                     print("This state loop on himself, ending simulation.")
                     break
-
+                
+                # Choose the next state with the choices function
                 choice = random.choices(targets, weights = weights)
                 print(str(step) + ": Transition from " + state + " to " + choice[0])
                 state = choice[0]
                 
 
+            # Non-deterministic part
             else:
+                
+                # If we loop on the state with every action, end the simulation
                 loop = True
                 for act in self.possible_actions[state]:
                     targets = [self.states[i] for i in range(len(self.states)) if self.transition[act][index][i] != 0]
@@ -229,15 +245,19 @@ class MDP():
                 if loop:
                     print("This state loop on himself, ending simulation.")
                     break
-
+                
+                # If automatic simulation is disabled, asked the user for the next action
                 if auto == "N" :
                     act = input("Choisissez une action parmi les suivantes : " + str(self.possible_actions[state]) + "\n")
                     while act not in self.possible_actions[state]:
                         print("L'action ne fais pas parti des actions possible, veuillez ressayez")
                         act = input("Choisissez une action parmi les suivantes : " + str(self.possible_actions[state]) + "\n")
+                
+                # If automatic simulation is enabled, choose a random action
                 else:
                     act = random.choice(self.possible_actions[state])
 
+                # Get target states and respective weights
                 targets = [self.states[i] for i in range(len(self.states)) if self.transition[act][index][i] != 0]
                 weights = [self.transition[act][index][i] for i in range(len(self.states)) if self.transition[act][index][i] != 0]
 
@@ -247,6 +267,8 @@ class MDP():
         if animate == 'Y':
             self.update(state)
 
+
+    # Simulation function for Statistical model-checking
     def simu(self, goal, max_steps = 100):
         if len(self.states)==0:
             return
@@ -275,7 +297,7 @@ class MDP():
         
         return state
     
-
+    # Monte-Carlo method for SMC
     def MonteCarlo(self, state, max_step, eps, sigma):
         N = int(np.ceil((np.log(2)-np.log(sigma))/((2*eps)**2)))
         proba = 0
@@ -286,6 +308,7 @@ class MDP():
 
         return proba/N
 
+    # SPRT method for SMC
     def SPRT(self, state, max_step, alpha, beta, theta, eps, N):
         gamma1 = theta - eps
         gamma0 = theta + eps
