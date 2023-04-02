@@ -329,18 +329,26 @@ class MDP():
                 return f"On valide l'hypothèse P(♦{state}) >= {theta} + {eps}"
         return False
     
+    # Iter values algorithm to get opponent with best rewards
     def iter_values(self, gamma, epsilon, sens = "max"):
 
+        # Stop immediatly if there are no rewards defined
         if not self.reward :
             print("This MDP has no reward")
             return (None,None)
 
+        # Setup the itervalues algorithm to get max or min rewards
         if sens not in ["max", "min"]:
             raise ValueError("sens is either max or min")
+        
+
+        # Initialize variables
         V = np.zeros(len(self.states))
         new_V = np.zeros(len(self.states))
         flag = False
         #print(self.reward)
+
+
         while not flag:
             for i in range(len(new_V)):
                 state = self.states[i]
@@ -354,6 +362,8 @@ class MDP():
                 flag = True
             V = new_V.copy()
         sigma = [None]*len(self.states)
+
+        # Get the opponent
         for s in self.states:
             i = self.states.index(s)
             actions = self.possible_actions[s]
@@ -366,6 +376,7 @@ class MDP():
 
         return V, sigma
 
+    # Simulation function for Q-Learning algorithm, this function simulate only the next step
     def Q_simu(self, state, act):
 
         index = self.states.index(state)
@@ -383,7 +394,7 @@ class MDP():
 
         return state
     
-
+    # Q-Learning algorithm
     def Q_Learning(self, T_tot, gamma):
 
         for state in self.states:
