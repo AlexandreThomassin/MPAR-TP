@@ -567,7 +567,9 @@ class MDP():
 
     ### Reinforcement Learning
 
+    # Main function
     def SMC4MDP(self, state, h, eps, N, L, p, eta, SPRT_max_step, SPRT_alpha, SPRT_beta, SPRT_theta, SPRT_eps, SPRT_N):
+        # Compute T 
         T = np.log2(eta)/np.log2(1 - p)
         for _ in range(int(T)):
             sigma = np.zeros((len(self.states), len(self.actions)))
@@ -578,12 +580,13 @@ class MDP():
                     sigma[i][j] = 1/len(self.possible_actions[self.states[i]])
             sigma = self.optimise_sigma(state, sigma, h, eps, N, L)
             adversaire = self.determinise(sigma)
-            #print(adversaire)
+
             if not self.hypothesisTesting(adversaire, state, SPRT_max_step, SPRT_alpha, SPRT_beta, SPRT_theta, SPRT_eps, SPRT_N):
                 return False
             
         return True                    
     
+    # Optimising scheduler
     def optimise_sigma(self,state, sigma, h, eps, N, L):
         for _ in (range(L)):
             Q = self.sigma_evaluate(state, sigma, N)
@@ -592,6 +595,7 @@ class MDP():
             #print("Q = \n", Q, "\n sigma =", sigma, "\nScheduler = \n", self.determinise(sigma.copy()))
         return sigma
     
+    # Get deterministic scheduler
     def determinise(self, sigma):
         for i in range(len(self.states)):
             line = np.zeros(len(self.actions))
@@ -599,21 +603,17 @@ class MDP():
             sigma[i] = line.copy()
         return sigma
 
+    # Make a simulation using a chosen sigma
     def simu_sigma(self, sigma, state, max_step = 200):
         res = []
         for _ in range(max_step):
 
-            # print("sigma : "  + str(sigma)) 
             index_state = self.states.index(state)
 
             # Choix de l'actions selon sigma
             actions = self.actions
             weights = sigma[index_state]
 
-            # print(state)
-            # print(actions)
-            # print(weights)
-            
             try:
                 action = random.choices(actions, weights)[0]
             except:
@@ -648,6 +648,7 @@ class MDP():
             
         return res
 
+    # Evaluate sigma regarding the chosen property
     def sigma_evaluate(self, final_state, sigma, N = 1000):
         R_plus = np.zeros((len(self.states), len(self.actions)))
         R_moins = np.zeros((len(self.states), len(self.actions)))
@@ -674,17 +675,17 @@ class MDP():
 
                 Q[index_state][index_action] = R_plus[index_state][index_action] / (R_plus[index_state][index_action] + R_moins[index_state][index_action])
         
-        # print('R plus : ' + str(R_plus))
-        # print('R moins : ' + str(R_moins))
+
         return Q
     
+    # Use SPRT algorithm to test if trained scheduler verify the property
     def hypothesisTesting(self, adversaire, state, max_step, alpha, beta, theta, eps, N):
         gamma1 = theta - eps
         gamma0 = theta + eps
         logA = np.log((1 - beta)/alpha)
         logB = np.log(beta/(1 - alpha))
         logRm = 0
-        # print('t' + str(adversaire))
+        
         for _ in range(N):
             sim = self.simu_sigma(adversaire, self.states[0], max_step)[-1][0]
             if sim == state:
@@ -693,15 +694,13 @@ class MDP():
                 logRm += np.log(1 - gamma1) - np.log(1 - gamma0)
 
             if logRm >= logA:
-                # return f"On valide l'hypothèse P(♦{state}) <= {theta} - {eps}"
-                # print('False')
                 return True
+            
             if logRm <= logB:
-                # return f"On valide l'hypothèse P(♦{state}) >= {theta} + {eps}"
-                # print('True')
                 return False
         return False
 
+    # Improve scheduler based on evaluation
     def sigma_improve(self, sigma, h, eps, Q):
         res = sigma
         for i in range(len(self.states)):
