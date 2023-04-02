@@ -397,17 +397,19 @@ class MDP():
     # Q-Learning algorithm
     def Q_Learning(self, T_tot, gamma):
 
+        # Stop if this is a Markov Chain
         for state in self.states:
             if None in self.possible_actions[state]:
                 print("Cannot apply Q-Learning on Markov Chain")
                 return None
 
-
+        # Initialize Variable
         Q = np.zeros((len(self.states), len(self.actions)))
         alpha = np.ones((len(self.states), len(self.actions)))
         #print(Q)
         state = self.states[0]
         index_state = self.states.index(state)
+
 
         for t in range(T_tot):
             act = random.choice(self.possible_actions[state])
@@ -427,22 +429,29 @@ class MDP():
 
         return Q
 
+    # Probabilistic Model checking for Markov Chain
     def modelcheckMC(self, final_state, n = None):
         """
         Calcule P(♦s)
         """
+
+        # Change function if the user tries to apply this function to MDP instead of Markov Chain
         for state in self.states:
             if not self.possible_actions[state] == [None]:
                 print("WARNING: You are trying to use the modelcheckMC with a MDP, changing to modelcheckMDP")
                 return self.modelcheckMDP(final_state, n)
+            
+        # Initialize S1 with the states given by the user
         if type(final_state) is list:
             S1 = final_state
         else:
             S1 = [final_state]
 
+        # Initialize A and S0
         A = np.array(self.transition[None].copy())
         S0 = [self.states[s] for s in range(len(self.states)) if self.states[s] not in S1 and A[s][s] >= 1.]
 
+        # Fill S1 and S0 with additional states if there are
         for state in self.states:
             index = self.states.index(state)
             targets = [self.states[i] for i in range(len(self.states)) if self.transition[None][index][i] != 0]
@@ -458,10 +467,13 @@ class MDP():
         print("S1 :" + str(S1))
         print("S0 :" + str(S0))
 
+        # Get indexes of S1 and S0 states
         index_S1 = [self.states.index(s) for s in S1]
  
         index_S0 = [self.states.index(s) for s in S0]
- 
+
+
+        # Delete S0 and S1 lines from A and create b
         A = np.delete(A, index_S0 + index_S1, axis = 0)
         b = np.take(A, index_S1, axis = 1)
         b = np.sum(b, axis = 1)
@@ -471,6 +483,7 @@ class MDP():
 
         # Compute gamma_n
         if n is None:
+            # Solve Ax = b
             y = np.linalg.solve(M,b)
         else:
             y = np.zeros((A.shape[0],1))
@@ -478,11 +491,15 @@ class MDP():
                 y = np.dot(A, y) + b
         return y
 
+    # Probabilistic Model checking for Markovian decision process
     def modelcheckMDP(self, final_state):
 
+        # Initialize S1 and S0
         S1 = [final_state]
 
         S0 = []
+
+        # Add states that loop on themselves to S0
         for state in self.states:
             loop = True
             for act in self.transition.keys():
@@ -496,6 +513,7 @@ class MDP():
         # print("S1 :" + str(S1))
         # print("S0 :" + str(S0))
 
+        # Get S0 and S1 states indexes
         index_S0 = [self.states.index(S) for S in S0]
         
         index_S1 = [self.states.index(S) for S in S1]
@@ -513,7 +531,9 @@ class MDP():
 
         # print(A.shape)
         # print(b.shape)
+        
 
+        # Fill and A and b 
         i = 0
         j = 0
         for state in S:
@@ -532,16 +552,8 @@ class MDP():
             i+=1
             j+=1
         
-        # print("A :" + str(A))
-        # print("b :" + str(b))
+        
         c = np.ones(A.shape[1])
-
-
-        # print(c.shape)
-
-        l = np.zeros(A.shape[1])
-        u = np.ones(A.shape[1])
-        bounds = list(zip(l,u))
 
         # print(-c)
 
